@@ -1,0 +1,23 @@
+{
+  "name": "@astmatrix/application",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Application service: encode orchestration, caching, preview and insert",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/barcode-core": "workspace:*",
+    "@astmatrix/host-contract": "workspace:*",
+    "@astmatrix/profiles": "workspace:*",
+    "@astmatrix/renderers-svg": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/symbology-catalog": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*",
+    "zod": "^4.6.7"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "manifestVersion": 5,
+  "id": "com.astmatrix.m0.photoshop",
+  "name": "AstMatrix M0 Spike",
+  "version": "0.0.1",
+  "main": "index.html",
+  "host": [{ "app": "PS", "minVersion": "24.0.0" }],
+  "entrypoints": [{ "type": "panel", "id": "m0", "label": { "default": "AstMatrix M0" }, "minimumSize": { "width": 340, "height": 420 } }],
+  "requiredPermissions": {}
+}

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AstMatrix - Adobe Illustrator CEP development manifest ( docs/plan/INIT.md §4.4, §4.7, §12.5).
+
+  Development identifiers and version scope must be confirmed before release:
+    * ExtensionBundleId / Extension Id are provisional. §12.4 requires the final plugin ids,
+      versioning and upgrade policy to be decided before publishing.
+    * Host ILST range starts at 27.0 (Illustrator 2023). Illustrator 2024 is 28.x, 2025 is
+      29.x and 2026 is 30.x.
+    * RequiredRuntime CSXS 11.0 is the CEP 11 floor. The same bundle may carry web/cep11 and
+      web/cep12; the bootstrap selects one after reading the real CEP and host version rather
+      than trusting a user agent string (§4.7).
+    * Signing is not part of the shared build pipeline (§6.3).
+-->
+<ExtensionManifest
+  Version="7.0"
+  ExtensionBundleId="com.u202f.astmatrix.illustrator"
+  ExtensionBundleVersion="0.1.0"
+  ExtensionBundleName="AstMatrix"
+>
+  <ExtensionList>
+    <Extension Id="com.astmatrix.illustrator.panel" Version="0.1.0" />
+  </ExtensionList>
+
+  <ExecutionEnvironment>
+    <HostList>
+      <!-- Illustrator only. Every annual version shares this single CEP target. -->
+      <Host Name="ILST" Version="[27.0,30.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="11.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+
+  <DispatchInfoList>
+    <Extension Id="com.astmatrix.illustrator.panel">
+      <DispatchInfo>
+        <Resources>
+          <!--
+            MainPath points at the bootstrap, which picks web/cep11 or web/cep12 at runtime.
+            The ExtendScript renderer is shared by both profiles and keeps its own build
+            pipeline; modern browser bundles must never be reused as JSX (§4.5, §9.3).
+          -->
+          <MainPath>./bootstrap/index.html</MainPath>
+          <ScriptPath>./jsx/astmatrix.jsx</ScriptPath>
+          <CEFCommandLine />
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>AstMatrix</Menu>
+          <Geometry>
+            <Size>
+              <Width>420</Width>
+              <Height>620</Height>
+            </Size>
+            <MinSize>
+              <Width>320</Width>
+              <Height>420</Height>
+            </MinSize>
+            <MaxSize>
+              <Width>2000</Width>
+              <Height>2000</Height>
+            </MaxSize>
+          </Geometry>
+          <Icons />
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

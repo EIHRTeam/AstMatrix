@@ -1,0 +1,38 @@
+{
+  "name": "@astmatrix/playground-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser playground for UI, encoder and SVG development",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "vite",
+    "build:web": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@astmatrix/application": "workspace:*",
+    "@astmatrix/barcode-core": "workspace:*",
+    "@astmatrix/host-contract": "workspace:*",
+    "@astmatrix/profiles": "workspace:*",
+    "@astmatrix/renderers-svg": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/symbology-catalog": "workspace:*",
+    "@astmatrix/tooling": "workspace:*",
+    "@astmatrix/ui-react": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@rolldown/plugin-babel": "^0.2.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.4"
+  }
+}

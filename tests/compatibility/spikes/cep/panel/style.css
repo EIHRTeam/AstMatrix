@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 94%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 85%;
+  --ring: 0 0% 9%;
+}
+body {
+  margin: 0;
+  padding: 16px;
+  font: 14px/1.5 sans-serif;
+  background: #fff;
+  color: #171717;
+  overflow-y: auto;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+[data-radix-select-content],
+[role='listbox'] {
+  background: #fff;
+  color: #171717;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+[data-highlighted] {
+  background: #eee;
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@astmatrix/host-adapter-illustrator-uxp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reserved Illustrator UXP adapter entry point (no unreleased API usage)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/host-contract": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*"
+  }
+}

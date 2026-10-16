@@ -1,0 +1,16 @@
+{
+  "name": "@astmatrix/vector-ir",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VectorScene intermediate representation, geometry and physical sizing",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/shared": "workspace:*"
+  }
+}

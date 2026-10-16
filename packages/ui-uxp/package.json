@@ -1,0 +1,21 @@
+{
+  "name": "@astmatrix/ui-uxp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Photoshop native UXP UI (no React requirement)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/application": "workspace:*",
+    "@astmatrix/host-contract": "workspace:*",
+    "@astmatrix/profiles": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/symbology-catalog": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*"
+  }
+}

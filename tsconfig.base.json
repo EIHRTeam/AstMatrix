@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": [
+    "Shared compiler options for every AstMatrix workspace package.",
+    "TypeScript 7 removed `baseUrl`; `paths` must be relative and are resolved against the",
+    "configuration file that declares them, so every entry below is relative to the repo root."
+  ],
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": [],
+    "paths": {
+      "@astmatrix/host-adapter-illustrator-cep": [
+        "./packages/host-adapters/illustrator-cep/src/index.ts"
+      ],
+      "@astmatrix/host-adapter-photoshop-uxp": [
+        "./packages/host-adapters/photoshop-uxp/src/index.ts"
+      ],
+      "@astmatrix/host-adapter-affinity-script": [
+        "./packages/host-adapters/affinity-script/src/index.ts"
+      ],
+      "@astmatrix/host-adapter-illustrator-uxp": [
+        "./packages/host-adapters/illustrator-uxp/src/index.ts"
+      ],
+      "@astmatrix/host-adapters/*": ["./packages/host-adapters/*/src/index.ts"],
+      "@astmatrix/shared": ["./packages/shared/src/index.ts"],
+      "@astmatrix/vector-ir": ["./packages/vector-ir/src/index.ts"],
+      "@astmatrix/symbology-catalog": ["./packages/symbology-catalog/src/index.ts"],
+      "@astmatrix/profiles": ["./packages/profiles/src/index.ts"],
+      "@astmatrix/barcode-core": ["./packages/barcode-core/src/index.ts"],
+      "@astmatrix/renderers-svg": ["./packages/renderers-svg/src/index.ts"],
+      "@astmatrix/host-contract": ["./packages/host-contract/src/index.ts"],
+      "@astmatrix/application": ["./packages/application/src/index.ts"],
+      "@astmatrix/ui-react": ["./packages/ui-react/src/index.ts"],
+      "@astmatrix/ui-uxp": ["./packages/ui-uxp/src/index.ts"],
+      "@astmatrix/tooling": ["./tooling/index.ts"],
+      "@astmatrix/tooling/web-profiles": ["./tooling/web-profiles/index.ts"],
+      "@astmatrix/tooling/build-targets": ["./tooling/build-targets/targets.ts"],
+      "@astmatrix/tooling/manifest": ["./tooling/manifest/index.ts"],
+      "@astmatrix/tooling/web-assets": ["./tooling/web-profiles/assets.ts"]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@astmatrix/barcode-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Encoding providers (bwip-js/BWIPP) producing raw geometry",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/profiles": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/symbology-catalog": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*",
+    "bwip-js": "^4.11.4"
+  }
+}

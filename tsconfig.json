@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": [
+    "Workspace root config. Every workspace package owns its own tsconfig.json which",
+    "extends tsconfig.base.json and narrows lib/types to its runtime boundary",
+    "(DOM for Web UI, none for the shared core, Node for tooling and tests).",
+    "Root typecheck is orchestrated with `pnpm -r run typecheck` (see docs/plan/INIT.md 6.4)."
+  ],
+  "extends": "./tsconfig.base.json",
+  "files": []
+}

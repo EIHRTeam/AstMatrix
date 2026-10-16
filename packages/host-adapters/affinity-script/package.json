@@ -1,0 +1,18 @@
+{
+  "name": "@astmatrix/host-adapter-affinity-script",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Affinity JavaScript SDK host adapter (native curves and groups)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/host-contract": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*"
+  }
+}

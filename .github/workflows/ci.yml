@@ -1,0 +1,136 @@
+name: CI
+
+# Gate order (docs/plan/INIT.md §12.3):
+#   typecheck / oxlint / oxfmt / unit tests  ->  build profiles  ->  packaging  ->  host integration
+# Type checking, linting, formatting and tests are independent and may run in parallel.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  # §12.2 Shared Checks — pure logic, no host application required.
+  shared-checks:
+    name: Shared checks (typecheck / lint / fmt / tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # TypeScript 7 type checking over every workspace project (§6.4).
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Oxlint
+        run: pnpm lint
+
+      - name: ExtendScript ES3 syntax
+        run: pnpm check:extendscript
+
+      - name: React Compiler rule positive/negative probes
+        run: pnpm spike:m0:rules
+
+      - name: Oxfmt check
+        run: pnpm fmt:check
+
+      # Unit, React state, registry/profile, encoding conformance and golden tests.
+      # M0 shared SVG decode uses locally installed ZXing/ZBar WASM in the nonempty decode project.
+      # Host exports and physical scanner acceptance still require separate integration evidence.
+      - name: Tests
+        run: pnpm test
+
+      - name: Offline shared pipeline benchmark and production SVG decode
+        run: |
+          pnpm benchmark:m1
+          pnpm decode:m1
+
+      - name: Upload shared benchmark and decode evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-m1-evidence
+          path: tmp/m1-evidence/
+
+  # §12.2 Build Checks — Web Profile and host target compilation.
+  #
+  # M3/M4 produce local development bundles; signed release packages remain M6.
+  build-checks:
+    name: Build checks (macOS)
+    needs: shared-checks
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve host targets, Web profiles and annual aliases
+        run: |
+          node tooling/build-targets/build.mjs --list
+          node tooling/build-targets/build.mjs target --target=illustrator-2023 --dry-run
+          node tooling/build-targets/build.mjs target --target=illustrator-2025 --dry-run
+          node tooling/build-targets/build.mjs target --target=illustrator-2026 --dry-run
+          node tooling/build-targets/build.mjs web --profile=cep11 --dry-run
+          node tooling/build-targets/build.mjs web --profile=cep12 --dry-run
+
+      - name: Playground bundle (proves Vite 8 + React 19.3 + React Compiler build)
+        run: pnpm --filter @astmatrix/playground-web build:web
+
+      - name: Illustrator and Photoshop development host bundles
+        run: |
+          pnpm build:illustrator
+          pnpm build:photoshop
+          pnpm check:host-bundles
+
+      - name: Root CEP Web builds with Compiler on and off
+        run: |
+          pnpm build:web --profile=cep11 --compiler=off
+          pnpm build:web --profile=cep12 --compiler=off
+
+      - name: Verify emitted targets, relative resources and notices
+        run: node tooling/build-targets/verify-web.mjs tmp/m2-bundles.json
+
+      - name: Packaging plan
+        run: pnpm package
+
+      # TODO(M5/M6): Affinity bundle and signed ZXP/CCX release packages.
+      # Signing stays decoupled from shared code compilation (§6.3, §12.2).
+
+  # §12.2 Platform Checks — required before release, not on every pull request.
+  #
+  # TODO(M6): macOS x64 and Windows x64 verification. Pure JavaScript bundles are not rebuilt
+  # per architecture (§0.5); these jobs run compatibility tests only.
+  #
+  # §12.2 Host Integration — requires installed Illustrator / Photoshop / Affinity.
+  # A green hosted-runner unit test run never substitutes for real host acceptance; this job
+  # must target a runner or environment with the real applications installed.

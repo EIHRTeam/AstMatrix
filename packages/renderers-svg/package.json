@@ -1,0 +1,17 @@
+{
+  "name": "@astmatrix/renderers-svg",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SVG renderer consuming VectorScene only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*"
+  }
+}

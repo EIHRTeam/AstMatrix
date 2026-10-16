@@ -1,0 +1,32 @@
+body {
+  padding: 12px;
+  color: #e8e8e8;
+  background: #292929;
+}
+.astmatrix-native label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+.astmatrix-native select,
+.astmatrix-native input,
+.astmatrix-native textarea {
+  width: 100%;
+}
+.astmatrix-native textarea {
+  height: 80px;
+}
+.astmatrix-native button {
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+.astmatrix-native .selected {
+  background: #285a52;
+}
+.astmatrix-native .field-error {
+  color: #ffb8b8;
+}
+#astmatrix-webview {
+  width: 100%;
+  height: 640px;
+}

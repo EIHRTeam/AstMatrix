@@ -1,0 +1,21 @@
+{
+  "name": "@astmatrix/tooling",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Build targets, web profiles, manifest generation and packaging helpers",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./web-profiles": "./web-profiles/index.ts",
+    "./build-targets": "./build-targets/targets.ts",
+    "./manifest": "./manifest/index.ts",
+    "./web-assets": "./web-profiles/assets.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "vite": "^8.3.4"
+  }
+}

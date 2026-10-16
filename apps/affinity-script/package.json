@@ -1,0 +1,21 @@
+{
+  "name": "@astmatrix/affinity-script",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Affinity Scripting host target: dialog entry, canvas preview and command commit",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astmatrix/application": "workspace:*",
+    "@astmatrix/host-adapter-affinity-script": "workspace:*",
+    "@astmatrix/profiles": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/symbology-catalog": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1"
+  }
+}
