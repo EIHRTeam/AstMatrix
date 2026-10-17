@@ -24,6 +24,7 @@ const PLANNED_ARTIFACTS = [
     target: 'illustrator-cep',
     contents: [
       'CSXS/manifest.xml',
+      'LICENSE',
       'bootstrap/',
       'web/cep11/',
       'web/cep12/',
@@ -35,17 +36,34 @@ const PLANNED_ARTIFACTS = [
   {
     name: 'astmatrix-photoshop.ccx',
     target: 'photoshop-uxp',
-    contents: ['manifest.json', 'index.html', 'index.css', 'index.js', 'licenses/'],
+    contents: [
+      'manifest.json',
+      'icon.png',
+      'LICENSE',
+      'index.html',
+      'index.css',
+      'index.js',
+      'licenses/',
+    ],
   },
   {
     name: 'astmatrix-photoshop-webview.ccx',
     target: 'photoshop-uxp-webview',
-    contents: ['manifest.json', 'index.html', 'index.css', 'index.js', 'webview/', 'licenses/'],
+    contents: [
+      'manifest.json',
+      'icon.png',
+      'LICENSE',
+      'index.html',
+      'index.css',
+      'index.js',
+      'webview/',
+      'licenses/',
+    ],
   },
   {
     name: 'astmatrix-affinity/',
     target: 'affinity-script',
-    contents: ['main.js', 'lib/', 'manifest.json'],
+    contents: ['main.js', 'LICENSE', 'lib/', 'manifest.json'],
   },
 ];
 

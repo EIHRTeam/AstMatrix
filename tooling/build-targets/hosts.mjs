@@ -19,6 +19,7 @@ const invoke = (args, env = {}) => {
   if (result.status !== 0) throw new Error('Build subprocess failed');
 };
 async function notices(directory) {
+  await cp(path.join(root, 'LICENSE'), path.join(directory, 'LICENSE'));
   await mkdir(path.join(directory, 'licenses'), { recursive: true });
   const resolver = createRequire(path.join(root, 'packages/barcode-core/package.json'));
   const engine = path.dirname(path.dirname(resolver.resolve('bwip-js')));
@@ -114,6 +115,10 @@ export async function buildPhotoshop() {
   });
   for (const file of ['index.html', 'index.css', 'manifest.json'])
     await cp(path.join(app, file), path.join(native, file));
+  const icon = await readFile(path.join(root, 'icon.png'));
+  if (icon.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a')
+    throw new Error('icon.png must be a PNG image');
+  await writeFile(path.join(native, 'icon.png'), icon);
   const code = await readFile(path.join(native, 'index.js'), 'utf8');
   parse(code, { ecmaVersion: 2020, sourceType: 'script' });
   if (!code.includes('require("photoshop")') && !code.includes("require('photoshop')"))

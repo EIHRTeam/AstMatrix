@@ -40,8 +40,13 @@ for (const root of roots) {
     }
   }
   await visit(root);
-  for (const license of ['OCR-A-NOTICE.txt', 'OCR-B-NOTICE.txt', 'BWIP-JS-MIT.txt'])
-    await access(path.join(root, 'licenses', license));
+  for (const file of [
+    'LICENSE',
+    'licenses/OCR-A-NOTICE.txt',
+    'licenses/OCR-B-NOTICE.txt',
+    'licenses/BWIP-JS-MIT.txt',
+  ])
+    await access(path.join(root, file));
   if (root.includes('illustrator')) {
     const manifest = await readFile(path.join(root, 'CSXS/manifest.xml'), 'utf8');
     assert(manifest.includes('./bootstrap/index.html'));
@@ -87,6 +92,28 @@ for (const root of roots) {
       assert.equal(manifest.host[0].minVersion, '26.0.0');
       assert.equal(manifest.requiredPermissions.webview.enableMessageBridge, 'localOnly');
       assert.deepEqual(manifest.requiredPermissions.webview.domains, []);
+    }
+    const iconGroups = [
+      { size: 24, icons: manifest.icons },
+      {
+        size: 23,
+        icons: manifest.entrypoints.flatMap((entrypoint) => entrypoint.icons ?? []),
+      },
+    ];
+    for (const { size, icons } of iconGroups) {
+      assert(Array.isArray(icons) && icons.length > 0, `Missing Photoshop ${size}px icon`);
+      for (const icon of icons) {
+        assert.equal(icon.width, size);
+        assert.equal(icon.height, size);
+        assert(Array.isArray(icon.scale) && icon.scale.includes(1) && icon.scale.includes(2));
+        assert(Array.isArray(icon.theme) && icon.theme.length > 0);
+        const bytes = await readFile(path.join(root, icon.path));
+        assert.equal(
+          bytes.subarray(0, 8).toString('hex'),
+          '89504e470d0a1a0a',
+          `${root}/${icon.path} must be a PNG`,
+        );
+      }
     }
     const code = await readFile(path.join(root, 'index.js'), 'utf8');
     parse(code, { ecmaVersion: 2020, sourceType: 'script' });
