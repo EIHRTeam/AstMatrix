@@ -47,7 +47,8 @@ for (const input of basicSamples.slice(0, 3))
         b = raster(svg(false));
       expect(a.width).toBe(b.width);
       expect(a.height).toBe(b.height);
-      expect(a.pixels).toEqual(b.pixels);
+      // Compare every RGBA byte natively; recursive equality is costly at 600 DPI on CI.
+      expect(a.pixels.equals(b.pixels)).toBe(true);
     });
 it('rejects nonuniform matrix scaling, nonfinite/negative dimensions, bounds and malformed paths', () => {
   const scene = generateScene(basicSamples[3]!);
