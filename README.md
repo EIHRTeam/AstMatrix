@@ -33,8 +33,8 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 3. Enable PlayerDebugMode:
 
-    - Windows: Open Registry Editor, navigate to `HKEY_CURRENT_USER\Software\Adobe\CSXS.11`, create a new string value named `PlayerDebugMode` and set its value to `1`.
-    - macOS: Open Terminal, run the command `defaults write com.adobe.CSXS.11 PlayerDebugMode 1`.
+    - Windows: Open Registry Editor, navigate to `HKEY_CURRENT_USER\Software\Adobe\CSXS.12`, create a new string value named `PlayerDebugMode` and set its value to `1`.
+    - macOS: Open Terminal, run the command `defaults write com.adobe.CSXS.12 PlayerDebugMode 1`.
 
 4. Fully restart Adobe Illustrator to load the plugin.
 5. Select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
