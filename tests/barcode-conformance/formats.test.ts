@@ -21,7 +21,7 @@ it('covers every original catalog row with executable defaults', () => {
   expect(originalCatalog).toHaveLength(40);
   for (const row of originalCatalog)
     for (const profileId of row.profileIds) {
-      const p = profiles.find((p) => p.id === profileId)!;
+      const p = profiles.find((candidate) => candidate.id === profileId)!;
       expect(p).toBeDefined();
       expect(row.symbologyIds).toContain(p.symbologyId);
       expect(
@@ -31,7 +31,7 @@ it('covers every original catalog row with executable defaults', () => {
   expect(symbologies.every((s) => s.status === 'implemented')).toBe(true);
 });
 const make = (id: string, fields: Record<string, unknown>, profileId = `${id}-default`) => {
-  const p = profiles.find((p) => p.id === profileId)!;
+  const p = profiles.find((candidate) => candidate.id === profileId)!;
   return { symbologyId: id, profileId, fields: { ...p.defaults, ...fields } };
 };
 it('computes UPC-E checks against expanded UPC-A rather than compressed digits', () => {
@@ -104,7 +104,7 @@ it('handles explicit checksum strategies, full ASCII controls and numeric bounda
     ['msi', 'checksum'],
     ['interleaved2of5', 'checksum'],
   ] as const) {
-    const p = profiles.find((p) => p.symbologyId === id)!;
+    const p = profiles.find((candidate) => candidate.symbologyId === id)!;
     for (const choice of p.fields.find((f) => f.name === fieldName)!.options!) {
       const scene = generateScene(
         make(id, {
@@ -128,7 +128,7 @@ it('handles explicit checksum strategies, full ASCII controls and numeric bounda
     expect(() => generateScene(make(id, { text: '\x00ABC', hri: true }))).toThrow('控制字符');
   }
   for (const id of ['isbn', 'ismn']) {
-    const p = profiles.find((p) => p.symbologyId === id)!;
+    const p = profiles.find((candidate) => candidate.symbologyId === id)!;
     const request = make(id, { text: String(p.defaults.text).replace(/-/g, '') }, p.id);
     expect(generateScene(generateScene(request).metadata.request!)).toEqual(generateScene(request));
   }
@@ -188,7 +188,7 @@ it('preserves Pharmacode 1:3 bars, 2X spaces and its independent binary value in
   }
 });
 it('honors the HRI switch for all admitted linear/publication/composite profiles', () => {
-  for (const p of profiles.filter((p) => p.fields.some((f) => f.name === 'hri'))) {
+  for (const p of profiles.filter((candidate) => candidate.fields.some((f) => f.name === 'hri'))) {
     const request = {
       symbologyId: p.symbologyId,
       profileId: p.id,

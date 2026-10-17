@@ -22,7 +22,7 @@ for (const profileId of [
   'telepen-default',
 ])
   it(`${profileId}: structured full payload readback`, async () => {
-    const p = profiles.find((p) => p.id === profileId)!;
+    const p = profiles.find((candidate) => candidate.id === profileId)!;
     const scene = generateScene({ symbologyId: p.symbologyId, profileId, fields: p.defaults });
     const raster = rasterizeSvg(renderSvg(scene), 600);
     const decoded = await readBarcodes(raster.image, {
@@ -52,7 +52,7 @@ for (const profileId of [
 
 for (const mode of [2, 3, 4, 5])
   it(`MaxiCode mode ${mode}: independent full carrier/message readback`, async () => {
-    const p = profiles.find((p) => p.symbologyId === 'maxicode')!;
+    const p = profiles.find((candidate) => candidate.symbologyId === 'maxicode')!;
     const postalCode = mode === 3 ? 'AB12CD' : '152382802';
     const scene = generateScene({
       symbologyId: 'maxicode',

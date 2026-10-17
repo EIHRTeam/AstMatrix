@@ -33,6 +33,9 @@ export interface PipelineObserver {
   now: () => number;
   record: (stage: 'encode' | 'ir', milliseconds: number) => void;
 }
+function unsupported(): never {
+  throw new Error('Unsupported diagonal drawing callback');
+}
 export function encodeNormalized(
   request: NormalizedRequest,
   observer?: PipelineObserver,
@@ -50,9 +53,6 @@ export function encodeNormalized(
     geometry: SceneNode['geometry'],
     role: SceneNode['role'] = matrix ? 'modules' : 'bars',
   ) => raw.push({ id: `n${raw.length}`, role, geometry });
-  const unsupported = () => {
-    throw new Error('Unsupported diagonal drawing callback');
-  };
   const drawing: DrawingContext<VectorScene> = {
     scale(sx, sy) {
       if (sx !== sy || !Number.isFinite(sx) || sx <= 0)

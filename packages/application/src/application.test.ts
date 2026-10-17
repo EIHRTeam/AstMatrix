@@ -13,7 +13,7 @@ import type { VectorScene } from '@astmatrix/vector-ir';
 const input = (text: string) => ({ ...basicSamples[3]!, fields: { text } });
 const flush = () =>
   Array.from({ length: 12 }).reduce<Promise<void>>(
-    (promise) => promise.then(() => {}),
+    (promise) => promise.then(() => undefined),
     Promise.resolve(),
   );
 function deferred<T>() {

@@ -67,7 +67,7 @@ try {
         for (let n = 0; n < 35; n++) {
           const start = performance.now(),
             next = !checkbox.checked;
-          await new Promise((resolve, reject) => {
+          await new Promise((done, reject) => {
             const observer = new MutationObserver(check),
               timer = setTimeout(() => {
                 observer.disconnect();
@@ -77,7 +77,7 @@ try {
               if (document.querySelectorAll('.barcode-form .field').length > 1 === next) {
                 observer.disconnect();
                 clearTimeout(timer);
-                resolve();
+                done();
               }
             }
             observer.observe(document.querySelector('.editor'), { childList: true, subtree: true });
@@ -96,7 +96,7 @@ try {
           values = [];
         for (let n = 0; n < 35; n++) {
           const start = performance.now();
-          await new Promise((resolve, reject) => {
+          await new Promise((done, reject) => {
             const observer = new MutationObserver(check),
               timer = setTimeout(() => {
                 observer.disconnect();
@@ -109,7 +109,7 @@ try {
               ) {
                 observer.disconnect();
                 clearTimeout(timer);
-                resolve();
+                done();
               }
             }
             observer.observe(document.querySelector('.preview'), {

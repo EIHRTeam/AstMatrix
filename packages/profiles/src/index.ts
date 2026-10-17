@@ -180,7 +180,7 @@ profiles.forEach((p) => {
   deepFreeze(p.fields);
 });
 export function getProfile(id: string): ProfileDefinition {
-  const p = profiles.find((p) => p.id === id);
+  const p = profiles.find((candidate) => candidate.id === id);
   if (!p) throw new AstMatrixError('UNSUPPORTED_PROFILE', '该 Profile 尚未实现');
   return p;
 }
@@ -190,6 +190,9 @@ export function checkDigit(body: string): string {
   for (let i = body.length - 1, weight = 3; i >= 0; i--, weight = 4 - weight)
     sum += Number(body[i]) * weight;
   return String((10 - (sum % 10)) % 10);
+}
+function invalidInput(message: string): never {
+  throw new AstMatrixError('INVALID_INPUT', message, 'business', { text: message });
 }
 export function normalizeRequest(request: GenerateRequest): NormalizedRequest {
   let symbology;
@@ -228,25 +231,22 @@ export function normalizeRequest(request: GenerateRequest): NormalizedRequest {
     mergePaths: true,
     ...parsed,
   };
-  const fail = (message: string) => {
-    throw new AstMatrixError('INVALID_INPUT', message, 'business', { text: message });
-  };
   if (request.symbologyId === 'ean13' || request.symbologyId === 'ean8') {
     fields.text = fields.text.trim();
     const length = request.symbologyId === 'ean13' ? 13 : 8;
-    if (!/^\d+$/.test(fields.text)) fail('EAN 只接受数字');
+    if (!/^\d+$/.test(fields.text)) invalidInput('EAN 只接受数字');
     if (fields.checkDigit === 'generate') {
-      if (fields.text.length !== length - 1) fail(`自动补位模式需要 ${length - 1} 位数字`);
+      if (fields.text.length !== length - 1) invalidInput(`自动补位模式需要 ${length - 1} 位数字`);
       fields.text += checkDigit(fields.text);
     } else if (
       fields.text.length !== length ||
       checkDigit(fields.text.slice(0, -1)) !== fields.text.slice(-1)
     )
-      fail(`需要 ${length} 位数字且校验位正确`);
+      invalidInput(`需要 ${length} 位数字且校验位正确`);
   } else if (request.symbologyId === 'code128' && !/^[\x20-\x7E]+$/.test(fields.text))
-    fail('Code 128 当前 Profile 只接受可打印 ASCII；不会替换字符');
+    invalidInput('Code 128 当前 Profile 只接受可打印 ASCII；不会替换字符');
   if (request.profileId === 'qr-mobile' && !/^https?:\/\/[^\s]+$/i.test(fields.text))
-    fail('Mobile Profile 需要完整 http/https 链接');
+    invalidInput('Mobile Profile 需要完整 http/https 链接');
   normalizeExtended(request, fields);
   return deepFreeze({
     inputFields,
@@ -282,11 +282,11 @@ export { ppnPayload, ntinPayload, ppnCheckDigits } from './formats/healthcare';
 export { expandUpce } from './formats/retail';
 
 /** The same input guidance is consumed by React and native UXP forms. */
-export function profileHint(profile: ProfileDefinition): string {
-  if (profile.description) return profile.description;
-  if (profile.symbologyId === 'ean13' || profile.symbologyId === 'ean8')
+export function profileHint(definition: ProfileDefinition): string {
+  if (definition.description) return definition.description;
+  if (definition.symbologyId === 'ean13' || definition.symbologyId === 'ean8')
     return '默认校验完整 GTIN；自动补位需在高级设置中明确选择。';
-  if (['qrcode', 'datamatrix'].includes(profile.symbologyId))
+  if (['qrcode', 'datamatrix'].includes(definition.symbologyId))
     return 'UTF-8 / ECI 26 · 正方形模块 · 静区随 SVG 一同保留。';
   return '保留输入内容，仅接受可打印 ASCII。';
 }

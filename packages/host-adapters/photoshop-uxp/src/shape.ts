@@ -171,12 +171,12 @@ function intersects(a: Pair[], b: Pair[]): boolean {
     b.some((q, j) => {
       const r = a[(i + 1) % a.length]!,
         s = b[(j + 1) % b.length]!;
-      const on = (a: Pair, b: Pair, c: Pair) =>
-        Math.abs(cross(a, b, c)) < 1e-12 &&
-        c[0] >= Math.min(a[0], b[0]) - 1e-12 &&
-        c[0] <= Math.max(a[0], b[0]) + 1e-12 &&
-        c[1] >= Math.min(a[1], b[1]) - 1e-12 &&
-        c[1] <= Math.max(a[1], b[1]) + 1e-12;
+      const on = (start: Pair, end: Pair, point: Pair) =>
+        Math.abs(cross(start, end, point)) < 1e-12 &&
+        point[0] >= Math.min(start[0], end[0]) - 1e-12 &&
+        point[0] <= Math.max(start[0], end[0]) + 1e-12 &&
+        point[1] >= Math.min(start[1], end[1]) - 1e-12 &&
+        point[1] <= Math.max(start[1], end[1]) + 1e-12;
       return (
         (cross(p, r, q) * cross(p, r, s) < 0 && cross(q, s, p) * cross(q, s, r) < 0) ||
         on(p, r, q) ||

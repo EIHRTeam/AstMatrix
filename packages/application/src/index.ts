@@ -167,16 +167,16 @@ export class PreviewController {
     }
     this.publish({ status: 'pending', revision, key: this.service.key(request) });
     this.cancel = this.scheduler.schedule(() => {
-      void this.service.generateNormalized(request).then(
-        (barcode) => {
+      void (async () => {
+        try {
+          const barcode = await this.service.generateNormalized(request);
           if (!this.disposed && this.state.revision === revision)
             this.publish({ status: 'ready', revision, barcode });
-        },
-        (error) => {
+        } catch (error) {
           if (!this.disposed && this.state.revision === revision)
             this.publish({ status: 'error', revision, error: asApplicationError(error) });
-        },
-      );
+        }
+      })();
     });
   }
   /** Reconnect after a development StrictMode effect cycle; old generations stay invalid. */

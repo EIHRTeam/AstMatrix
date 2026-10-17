@@ -8,7 +8,7 @@ import '@astmatrix/ui-react/styles.css';
 const container = document.getElementById('root');
 if (!container) throw new Error('Missing #root');
 try {
-  new RegExp('(?<=a)b');
+  RegExp('(?<=a)b');
   if (
     typeof TextEncoder !== 'function' ||
     typeof Promise !== 'function' ||

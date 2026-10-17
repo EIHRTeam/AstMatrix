@@ -23,7 +23,7 @@ it('maps all 40 source rows, deduplicates carriers and keeps the Mobile Profile'
     ),
   ).toEqual([9, 12, 5, 14]);
   for (const p of profiles) expect(isCompatible(p.symbologyId, p.id)).toBe(true);
-  for (const s of symbologies.filter((s) => s.status === 'listed'))
+  for (const s of symbologies.filter((entry) => entry.status === 'listed'))
     expect(s.reason.length).toBeGreaterThan(10);
 });
 for (const input of basicSamples)

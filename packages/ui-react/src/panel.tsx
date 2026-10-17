@@ -230,7 +230,7 @@ function Workbench({ runtime }: { runtime: Runtime }) {
             >
               {symbol.profileIds.map((id) => (
                 <option key={id} value={id}>
-                  {t(profiles.find((p) => p.id === id)?.label ?? id)}
+                  {t(profiles.find((candidate) => candidate.id === id)?.label ?? id)}
                 </option>
               ))}
             </select>
@@ -327,7 +327,7 @@ function BarcodeForm({
     request(migrated.fields);
     return subscribe({
       formState: { values: true },
-      callback: ({ values }) => request({ ...values }),
+      callback: ({ values: nextValues }) => request({ ...nextValues }),
     });
   }, [profile, runtime, enabled, reset, getValues, subscribe, currentFields]);
   const preview = useAstMatrixPreview(runtime.preview);

@@ -115,7 +115,7 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
     clear(symbols);
     clear(presets);
     const s = getSymbology(symbolId);
-    for (const symbol of symbologies.filter((s) => s.tab === tab)) {
+    for (const symbol of symbologies.filter((entry) => entry.tab === tab)) {
       const o = node('option', symbol.label + (symbol.status === 'listed' ? ' · 未实现' : ''));
       o.value = symbol.id;
       symbols.appendChild(o);
@@ -144,9 +144,9 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
   const renderForm = () => {
     clear(form);
     fieldErrors.clear();
-    const p = profiles.find((p) => p.id === profileId);
+    const p = profiles.find((candidate) => candidate.id === profileId);
     if (!p) return;
-    for (const f of p.fields.filter((f) => !f.advanced || advanced)) {
+    for (const f of p.fields.filter((field) => !field.advanced || advanced)) {
       const label = node('label', f.label),
         control = node(f.kind === 'select' ? 'select' : f.name === 'text' ? 'textarea' : 'input');
       if (f.kind === 'select')
@@ -196,7 +196,7 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
     preview.invalidate();
     symbolId = nextSymbol;
     profileId = nextProfile;
-    const p = profiles.find((p) => p.id === profileId);
+    const p = profiles.find((candidate) => candidate.id === profileId);
     if (p) fields = migrateFields(fields, p).fields;
     last[tab] = { symbolId, profileId };
     renderControls();
@@ -239,14 +239,14 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
     if (state.status === 'ready') {
       metrics.textContent = `${state.barcode.scene.widthMm.toFixed(2)} × ${state.barcode.scene.heightMm.toFixed(2)} mm`;
       const isCurrent = () => !disposed && preview.getSnapshot() === state;
-      void options.previewSvg(state.barcode.svg, isCurrent).then(
-        (src) => {
+      void (async () => {
+        try {
+          const src = await options.previewSvg(state.barcode.svg, isCurrent);
           if (isCurrent()) image.src = src;
-        },
-        (error) => {
+        } catch (error) {
           if (isCurrent()) status.textContent = `预览失败：${errorMessage(error)}`;
-        },
-      );
+        }
+      })();
     } else {
       image.src = '';
       metrics.textContent = '';
@@ -282,9 +282,9 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
     const rev = selectionRevision,
       host = adapter.getSnapshot();
     update();
-    void adapter
-      .readSelectedMetadata()
-      .then((metadata) => {
+    void (async () => {
+      try {
+        const metadata = await adapter.readSelectedMetadata();
         if (
           disposed ||
           rev !== selectionRevision ||
@@ -301,14 +301,13 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
         selectionRevision++;
         last[tab] = { symbolId, profileId };
         renderControls();
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!disposed) status.textContent = errorMessage(e);
-      })
-      .finally(() => {
+      } finally {
         restoring = false;
         restoreButton.disabled = false;
-      });
+      }
+    })();
   });
   const unsub = [preview.subscribe(update), insert.subscribe(update), adapter.subscribe(update)];
   renderControls();

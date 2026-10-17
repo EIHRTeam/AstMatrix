@@ -106,10 +106,11 @@ jobs:
       - name: Playground bundle (proves Vite 8 + React 19.3 + React Compiler build)
         run: pnpm --filter @astmatrix/playground-web build:web
 
-      - name: Illustrator and Photoshop development host bundles
+      - name: Illustrator, Photoshop and Figma development host bundles
         run: |
           pnpm build:illustrator
           pnpm build:photoshop
+          pnpm build:figma
           pnpm check:host-bundles
 
       - name: Root CEP Web builds with Compiler on and off

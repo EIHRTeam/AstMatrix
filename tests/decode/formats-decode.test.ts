@@ -35,7 +35,7 @@ afterAll(() => vi.unstubAllGlobals());
 for (const [profileId, sample] of Object.entries(expected))
   for (const dpi of [300, 600])
     it(`${profileId}: exact independent decode at ${dpi} DPI`, async () => {
-      const p = profiles.find((p) => p.id === profileId)!;
+      const p = profiles.find((candidate) => candidate.id === profileId)!;
       const raster = rasterizeSvg(
         renderSvg(generateScene({ symbologyId: p.symbologyId, profileId, fields: p.defaults })),
         dpi,
@@ -50,7 +50,7 @@ for (const [profileId, sample] of Object.entries(expected))
 
 for (const id of ['azteccode', 'pdf417', 'micropdf417'])
   it(`${id}: UTF-8 Unicode, control-like carets and whitespace round-trip`, async () => {
-    const p = profiles.find((p) => p.symbologyId === id)!;
+    const p = profiles.find((candidate) => candidate.symbologyId === id)!;
     const text = ' 中文 / café / 😀 / ^FNC1 ';
     const result = await decodeImage(
       rasterizeSvg(

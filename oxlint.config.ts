@@ -49,6 +49,16 @@ export default defineConfig({
     // `export {}` is used deliberately to mark placeholder module boundaries in the skeleton.
     'unicorn/require-module-specifiers': 'off',
     'no-console': 'off',
+    // CEP 11 runs on Chromium 88, below the ES2023 `toSorted`/`toReversed` baseline. Bundles
+    // are checked against that baseline, so the mutating forms are required in shipped code.
+    'unicorn/no-array-sort': 'off',
+    'unicorn/no-array-reverse': 'off',
+    // React Compiler memoizes inline JSX props in every React bundle; this rule targets the
+    // pre-compiler pattern and cannot know about the compiler-off comparison builds.
+    'react-perf/jsx-no-new-function-as-prop': 'off',
+    'react-perf/jsx-no-new-object-as-prop': 'off',
+    // CSS is imported for its side effect and is not assignable.
+    'import/no-unassigned-import': ['warn', { allow: ['**/*.css'] }],
   },
   ignorePatterns: [
     'node_modules/**',
@@ -87,6 +97,38 @@ export default defineConfig({
       // and the UXP panel entry exist now so the host targets have an entry point.
       files: ['apps/illustrator-cep/bootstrap/**/*.js', 'apps/photoshop-uxp/index.js'],
       rules: { 'unicorn/no-empty-file': 'off' },
+    },
+    {
+      // Build scripts and tests run ordered steps: awaiting inside the loop is the assertion.
+      // Test/fixture helpers stay next to the data they build on purpose.
+      files: ['tooling/**', 'tests/**', '**/*.test.ts', '**/*.test.tsx'],
+      rules: {
+        'no-await-in-loop': 'off',
+        'unicorn/consistent-function-scoping': 'off',
+      },
+    },
+    {
+      // Adobe action descriptors use underscore-prefixed keys (`_obj`, `_ref`, `_target`, ...).
+      files: ['packages/host-adapters/photoshop-uxp/**', 'tests/compatibility/**/*.ts'],
+      rules: { 'no-underscore-dangle': 'off' },
+    },
+    {
+      // Figma's plugin API owns `ui.postMessage` and `ui.onmessage`; neither is DOM messaging.
+      files: ['packages/host-adapters/figma-plugin/src/runtime.ts'],
+      rules: {
+        'unicorn/require-post-message-target-origin': 'off',
+        'unicorn/prefer-add-event-listener': 'off',
+      },
+    },
+    {
+      // The UXP webview bridge is a host object with its own `postMessage(message)` contract.
+      files: ['apps/photoshop-uxp/src/webview-client.ts', 'apps/photoshop-uxp/src/webview-host.ts'],
+      rules: { 'unicorn/require-post-message-target-origin': 'off' },
+    },
+    {
+      // Empty classes are host-shaped stubs supplied to the renderer under test.
+      files: ['tests/compatibility/illustrator-renderer.test.ts'],
+      rules: { 'typescript/no-extraneous-class': 'off' },
     },
   ],
 });

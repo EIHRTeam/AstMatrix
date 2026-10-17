@@ -30,7 +30,7 @@ const square = (x: number, y: number, w: number, reverse = false): PathCommand[]
   ];
   if (reverse) p.reverse();
   return p
-    .map(([x, y], i) => ({ op: i === 0 ? 'M' : 'L', x: x!, y: y! }) as PathCommand)
+    .map(([px, py], i) => ({ op: i === 0 ? 'M' : 'L', x: px!, y: py! }) as PathCommand)
     .concat({ op: 'Z' });
 };
 describe('Photoshop native composition (local contracts only)', () => {
