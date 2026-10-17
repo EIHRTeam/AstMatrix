@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 AstMatrix is an offline-first barcode plugin skeleton. `apps/` contains the playground
-and Illustrator CEP, Photoshop UXP, and Affinity entries. `packages/` contains encoding,
+and Illustrator CEP, Photoshop UXP, Figma Design, and Affinity entries. `packages/` contains encoding,
 profiles, catalog, vector IR, SVG rendering, services, UI, and host adapters.
 `tooling/` owns builds and packaging; `tests/` holds fixtures and layered suites.
 Bundle host resources with their app. Architecture and test intent are documented in
@@ -21,6 +21,8 @@ Use Node.js 24 LTS and pinned pnpm 12.11.2.
 - `pnpm test:conformance`, `pnpm test:vector`, `pnpm test:react-state`, `pnpm test:decode`: run focused suites.
 - `pnpm benchmark:core` and `pnpm decode:core`: produce optional reports under `tmp/`.
 - `pnpm build:illustrator`, `pnpm build:photoshop`, `pnpm build:affinity`: resolve host build plans.
+- `pnpm build:figma`: build the offline Figma Design development plugin with its fixed manifest ID.
+- `pnpm check:figma-bundle`: validate the Figma manifest, inline UI, sandbox and artifact hashes.
 - `pnpm package`: print the packaging plan.
 
 Illustrator and Photoshop builds emit development plugin directories; Affinity and signed

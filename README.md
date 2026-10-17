@@ -13,6 +13,59 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 > [!TIP]
 > This project is still in the early stages of development, and no stable release is currently available for production use. Caution is advised when using this project.
 
+## Installation
+
+### Adobe Illustrator
+
+**Via Adobe Creative Cloud**
+
+1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/206104) for this project
+
+2. Install the plugin
+
+**Manual**
+
+1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+2. Open the downloaded zip file with any zip archive software (e.g., 7-Zip, ShichiZip, Keka), extract the contents to the following directory:
+
+    - Windows: `%APPDATA%\Roaming\Adobe\CEP\extensions\`
+    - macOS: `~/Library/Application Support/Adobe/CEP/extensions/`
+
+3. Enable PlayerDebugMode:
+
+    - Windows: Open Registry Editor, navigate to `HKEY_CURRENT_USER\Software\Adobe\CSXS.11`, create a new string value named `PlayerDebugMode` and set its value to `1`.
+    - macOS: Open Terminal, run the command `defaults write com.adobe.CSXS.11 PlayerDebugMode 1`.
+
+4. Fully restart Adobe Illustrator to load the plugin.
+5. Select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
+
+### Adobe Photoshop
+
+**Via Adobe Creative Cloud**
+
+1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/1f4db629) for this project.
+2. Install the plugin.
+
+**Manual**
+
+1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+2. Doble-click the downloaded `.ccx` file to let Adobe Creative Cloud Desktop App install the plugin.
+
+    **Or**
+
+    Open the `.ccx` file with zip archive software (e.g., 7-Zip, ShichiZip, Keka), extract the contents to the following directory:
+
+    - Windows: `%APPDATA%\Roaming\Adobe\UXP\Plugins\External\`
+    - macOS: `~/Library/Application Support/Adobe/UXP/Plugins/`
+
+### Figma
+
+1. Open [the Figma Community page of this project](https://www.figma.com/community/plugin/1693350407249302347).
+
+2. Click the "Save" button to save the plugin to your Figma account.
+
+3. Open a Figma file, go to the menu bar, and select "Plugins" > "Saved plugins" > "AstMatrix" to launch the plugin.
+
 ## Compatibility
 
 ### Complete Support

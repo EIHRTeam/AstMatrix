@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/application",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Application service: encode orchestration, caching, preview and insert",
   "type": "module",

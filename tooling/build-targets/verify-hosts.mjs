@@ -3,14 +3,20 @@ import { readFile, access, readdir, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { parse } from 'acorn';
 import { createHash } from 'node:crypto';
+import { verifyFigma } from './verify-figma.mjs';
 const destination = process.argv[2] ?? 'tmp/host-bundles.json';
 const roots = [
   'apps/illustrator-cep/dist',
   'apps/photoshop-uxp/dist/native',
   'apps/photoshop-uxp/dist/enhanced',
+  'apps/figma-plugin/dist',
 ];
 const records = [];
 for (const root of roots) {
+  if (root === 'apps/figma-plugin/dist') {
+    records.push({ root, ...(await verifyFigma(root)) });
+    continue;
+  }
   const info = JSON.parse(await readFile(path.join(root, 'host-build-info.json'), 'utf8'));
   assert.equal(info.actualHost, 'not-run');
   for (const artifact of info.artifacts) {

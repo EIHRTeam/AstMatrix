@@ -20,6 +20,18 @@ import process from 'node:process';
 
 const PLANNED_ARTIFACTS = [
   {
+    name: 'astmatrix-figma/',
+    target: 'figma-plugin',
+    contents: [
+      'manifest.json',
+      'code.js',
+      'ui.html',
+      'LICENSE',
+      'licenses/',
+      'host-build-info.json',
+    ],
+  },
+  {
     name: 'astmatrix-illustrator.zxp',
     target: 'illustrator-cep',
     contents: [

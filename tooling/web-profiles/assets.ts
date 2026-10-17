@@ -26,11 +26,13 @@ export function webBuildAssets(profile: WebProfileId, compiler: boolean): Plugin
         paths = [
           'packages',
           'tooling',
-          profile === 'web-playground'
-            ? 'apps/playground-web'
-            : profile === 'uxp-webview'
-              ? 'apps/photoshop-uxp'
-              : 'apps/illustrator-cep',
+          profile === 'figma-ui'
+            ? 'apps/figma-plugin'
+            : profile === 'web-playground'
+              ? 'apps/playground-web'
+              : profile === 'uxp-webview'
+                ? 'apps/photoshop-uxp'
+                : 'apps/illustrator-cep',
         ].flatMap((name) => files(join(root, name)));
       const sourceHash = createHash('sha256');
       for (const path of paths)

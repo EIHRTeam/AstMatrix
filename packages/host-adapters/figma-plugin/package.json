@@ -1,0 +1,22 @@
+{
+  "name": "@astmatrix/host-adapter-figma-plugin",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Figma iframe bridge and native VectorScene insertion",
+  "type": "module",
+  "exports": {
+    ".": "./src/client.ts",
+    "./runtime": "./src/runtime.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.ui.json"
+  },
+  "dependencies": {
+    "@astmatrix/host-contract": "workspace:*",
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/vector-ir": "workspace:*"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "1.142.0"
+  }
+}

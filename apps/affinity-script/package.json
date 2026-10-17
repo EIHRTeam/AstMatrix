@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/affinity-script",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Affinity Scripting host target: dialog entry, canvas preview and command commit",
   "type": "module",

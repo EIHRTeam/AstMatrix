@@ -54,7 +54,13 @@
       "@astmatrix/tooling/web-profiles": ["./tooling/web-profiles/index.ts"],
       "@astmatrix/tooling/build-targets": ["./tooling/build-targets/targets.ts"],
       "@astmatrix/tooling/manifest": ["./tooling/manifest/index.ts"],
-      "@astmatrix/tooling/web-assets": ["./tooling/web-profiles/assets.ts"]
+      "@astmatrix/tooling/web-assets": ["./tooling/web-profiles/assets.ts"],
+      "@astmatrix/host-adapter-figma-plugin": [
+        "./packages/host-adapters/figma-plugin/src/client.ts"
+      ],
+      "@astmatrix/host-adapter-figma-plugin/runtime": [
+        "./packages/host-adapters/figma-plugin/src/runtime.ts"
+      ]
     }
   }
 }

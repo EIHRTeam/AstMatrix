@@ -13,7 +13,7 @@
  * TypeScript or React Compiler. Each profile must be validated in its real host.
  */
 
-export type WebProfileId = 'cep11' | 'cep12' | 'uxp-webview' | 'web-playground';
+export type WebProfileId = 'cep11' | 'cep12' | 'uxp-webview' | 'web-playground' | 'figma-ui';
 
 export interface WebProfile {
   readonly id: WebProfileId;
@@ -27,6 +27,14 @@ export interface WebProfile {
 }
 
 export const WEB_PROFILES = {
+  'figma-ui': {
+    id: 'figma-ui',
+    target: 'chrome99',
+    cssTarget: 'chrome99',
+    hosts: ['figma-plugin'],
+    notes:
+      'Bundled Figma iframe UI; conservative Chrome 99 syntax baseline, actual desktop runtime unverified.',
+  },
   cep11: {
     id: 'cep11',
     target: 'chrome88',

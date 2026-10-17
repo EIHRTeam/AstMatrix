@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/host-adapter-illustrator-uxp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Reserved Illustrator UXP adapter entry point (no unreleased API usage)",
   "type": "module",

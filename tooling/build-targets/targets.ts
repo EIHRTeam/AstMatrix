@@ -11,19 +11,28 @@
  * cache key exists precisely so that 2023 and 2024 share one `cep11` compile.
  */
 
-export type HostTargetId = 'illustrator-cep' | 'photoshop-uxp' | 'affinity-script';
+export type HostTargetId = 'illustrator-cep' | 'photoshop-uxp' | 'affinity-script' | 'figma-plugin';
 
 export interface HostTarget {
   readonly id: HostTargetId;
-  readonly runtime: 'cep' | 'uxp' | 'affinity-script';
+  readonly runtime: 'cep' | 'uxp' | 'affinity-script' | 'figma';
   readonly adapter: string;
-  readonly output: 'zxp' | 'ccx' | 'script';
+  readonly output: 'zxp' | 'ccx' | 'script' | 'directory';
   readonly webProfiles: readonly string[];
   readonly uiProfiles: readonly string[];
   readonly app: string;
 }
 
 export const HOST_TARGETS = {
+  'figma-plugin': {
+    id: 'figma-plugin',
+    runtime: 'figma',
+    adapter: '@astmatrix/host-adapter-figma-plugin',
+    output: 'directory',
+    webProfiles: ['figma-ui'],
+    uiProfiles: [],
+    app: 'apps/figma-plugin',
+  },
   'illustrator-cep': {
     id: 'illustrator-cep',
     runtime: 'cep',
@@ -60,7 +69,8 @@ export type AnnualAlias =
   | 'illustrator-2026'
   | 'photoshop-2023'
   | 'photoshop-2026'
-  | 'affinity';
+  | 'affinity'
+  | 'figma';
 
 export interface ResolvedBuildPlan {
   readonly alias: AnnualAlias;
@@ -76,6 +86,13 @@ export interface ResolvedBuildPlan {
  * marked as requiring an explicit runtime read instead of a single Chromium tier.
  */
 export const ANNUAL_ALIASES = {
+  figma: {
+    alias: 'figma',
+    target: 'figma-plugin',
+    webProfiles: ['figma-ui'],
+    runtimeResolutionRequired: false,
+    notes: 'Figma Design development plugin; real-host acceptance pending.',
+  },
   'illustrator-2023': {
     alias: 'illustrator-2023',
     target: 'illustrator-cep',

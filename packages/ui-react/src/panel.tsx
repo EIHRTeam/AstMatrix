@@ -35,6 +35,7 @@ import type { SelectionAction, SelectionState } from './selection';
 const SelectionStateContext = createContext<SelectionState>(initialSelection);
 const SelectionDispatchContext = createContext<Dispatch<SelectionAction>>(() => {});
 const HostContext = createContext<HostAdapter | null>(null);
+const HostStatusContext = createContext<string | undefined>(undefined);
 const ServiceContext = createContext<AstMatrixApplicationService | null>(null);
 const SettingsContext = createContext({ advanced: false, debounceMs: 150 });
 const SettingsDispatchContext = createContext<Dispatch<boolean>>(() => {});
@@ -46,6 +47,7 @@ export function AstMatrixProviders({
   hostLocale,
   openProject,
   openExternal,
+  hostStatusMessage,
 }: {
   service: AstMatrixApplicationService;
   adapter: HostAdapter;
@@ -54,6 +56,7 @@ export function AstMatrixProviders({
   hostLocale?: string;
   openProject?: () => void | Promise<void>;
   openExternal?: (url: string) => void | Promise<void>;
+  hostStatusMessage?: string;
 }) {
   const [selection, dispatch] = useReducer(selectionReducer, initialSelection);
   const [advanced, setAdvanced] = useReducer((_previous: boolean, next: boolean) => next, false);
@@ -64,13 +67,17 @@ export function AstMatrixProviders({
         <ProjectLinkContext value={openProject}>
           <ServiceContext value={service}>
             <HostContext value={adapter}>
-              <SettingsContext value={settings}>
-                <SettingsDispatchContext value={setAdvanced}>
-                  <SelectionStateContext value={selection}>
-                    <SelectionDispatchContext value={dispatch}>{children}</SelectionDispatchContext>
-                  </SelectionStateContext>
-                </SettingsDispatchContext>
-              </SettingsContext>
+              <HostStatusContext value={hostStatusMessage}>
+                <SettingsContext value={settings}>
+                  <SettingsDispatchContext value={setAdvanced}>
+                    <SelectionStateContext value={selection}>
+                      <SelectionDispatchContext value={dispatch}>
+                        {children}
+                      </SelectionDispatchContext>
+                    </SelectionStateContext>
+                  </SettingsDispatchContext>
+                </SettingsContext>
+              </HostStatusContext>
             </HostContext>
           </ServiceContext>
         </ProjectLinkContext>
@@ -392,6 +399,7 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
   const preview = useAstMatrixPreview(runtime.preview),
     insert = useInsert(runtime.insert);
   const host = useHostSnapshot();
+  const hostStatusMessage = useContext(HostStatusContext);
   const adapter = useContext(HostContext);
   const [copyResult, setCopyResult] = useState<{
     revision: number;
@@ -402,7 +410,7 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
   const copying = copyFeedback?.status === 'pending';
   const fake = adapter?.id === 'development-fake';
   const ready = preview.status === 'ready' ? preview.barcode : null;
-  const insertionMessage = ready ? insertionReason(host, ready.scene) : null;
+  const insertionMessage = hostStatusMessage ?? (ready ? insertionReason(host, ready.scene) : null);
   const reason =
     insert.status === 'pending' ? t('正在插入，请稍候') : insertionMessage && t(insertionMessage);
   const copySvg = async () => {

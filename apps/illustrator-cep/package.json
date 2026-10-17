@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/illustrator-cep",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Illustrator CEP host target: bootstrap, ExtendScript renderer and web bundles",
   "type": "module",

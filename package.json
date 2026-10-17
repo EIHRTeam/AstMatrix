@@ -1,8 +1,8 @@
 {
   "name": "astmatrix",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
-  "description": "AstMatrix — offline-first cross-platform barcode and QR code plugin for Illustrator, Photoshop and Affinity",
+  "description": "AstMatrix — offline-first cross-platform barcode and QR code plugin for Illustrator, Photoshop, Figma and Affinity",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -33,7 +33,9 @@
     "benchmark:core": "node tooling/benchmarks/run-core.mjs",
     "decode:core": "node tests/decode/run-core.mjs",
     "check:web-bundles": "node tooling/build-targets/verify-web.mjs",
-    "check:host-bundles": "node tooling/build-targets/verify-hosts.mjs"
+    "check:host-bundles": "node tooling/build-targets/verify-hosts.mjs",
+    "build:figma": "node tooling/build-targets/build.mjs figma",
+    "check:figma-bundle": "node tooling/build-targets/verify-figma.mjs"
   },
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.4",

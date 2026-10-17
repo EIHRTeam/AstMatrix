@@ -1,0 +1,20 @@
+html,
+body {
+  min-width: 0;
+  overflow-x: hidden;
+}
+body {
+  margin: 0;
+}
+.astmatrix {
+  padding: 16px;
+}
+.figma-connection-diagnostic {
+  margin: 0 16px 16px;
+  color: var(--foreground);
+}
+.figma-connection-diagnostic pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}

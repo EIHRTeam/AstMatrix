@@ -3,7 +3,7 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client", "@figma/plugin-typings"]
   },
   "include": ["."]
 }

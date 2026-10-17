@@ -15,6 +15,14 @@ it('dry-run explicitly resolves pinned targets without invoking compilation', ()
     '@astmatrix/playground-web',
   );
   expect(run('web', '--profile=uxp-webview', '--dry-run')).toContain('build:webview');
+  expect(run('web', '--profile=figma-ui', '--dry-run')).toContain(
+    '@astmatrix/figma-plugin build:ui',
+  );
+  expect(run('figma', '--dry-run')).toContain('figma-plugin');
+  expect(run('figma-plugin', '--dry-run')).toContain('DRY RUN: no artifacts produced.');
+  expect(run('target', '--target=figma', '--dry-run')).toContain('figma-ui');
+  expect(run('all', '--dry-run').match(/host target\s+figma-plugin/g)).toHaveLength(1);
+  expect(run('--list')).toContain('figma-ui');
   for (const args of [
     ['web'],
     ['web', '--profile=unknown'],

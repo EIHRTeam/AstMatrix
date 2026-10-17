@@ -98,16 +98,22 @@ export class RemoteHostAdapter implements HostAdapter {
   refresh(): Promise<void> {
     if (this.refreshing) return this.refreshing;
     const run = async () => {
+      const previous = this.snapshot;
       const next = validateSnapshot(await this.call<unknown>('capabilities', {}));
-      if (!this.disposed && stableStringify(next) !== stableStringify(this.snapshot)) {
-        this.snapshot = next;
-        this.listeners.forEach((l) => l());
-      }
+      // An unsolicited host event may have delivered a newer snapshot while awaiting RPC.
+      if (this.snapshot === previous) this.acceptSnapshot(next);
     };
     this.refreshing = run().finally(() => {
       this.refreshing = null;
     });
     return this.refreshing;
+  }
+  protected acceptSnapshot(value: unknown): void {
+    const next = validateSnapshot(value);
+    if (!this.disposed && stableStringify(next) !== stableStringify(this.snapshot)) {
+      this.snapshot = next;
+      this.listeners.forEach((l) => l());
+    }
   }
   async insert(scene: VectorScene, options: InsertOptions): Promise<InsertResult> {
     if (this.busy) throw new HostError('HOST_BUSY', '已有插入任务');

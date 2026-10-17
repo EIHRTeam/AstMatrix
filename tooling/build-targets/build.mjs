@@ -19,6 +19,7 @@
  */
 
 import process from 'node:process';
+import { buildFigma } from './figma.mjs';
 import { buildIllustrator, buildPhotoshop } from './hosts.mjs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -37,15 +38,15 @@ const USAGE = `AstMatrix build
   node tooling/build-targets/build.mjs <command> [options]
 
 Commands
-  illustrator | photoshop | affinity   build one host target
+  illustrator | photoshop | affinity | figma   build one host target
   web --profile=<profile>              build one Web UI profile
   target --target=<annual-alias>       build through an annual alias
   all                                  resolve every host target
   --list                               print the target/profile/alias tables
 
 Options
-  --profile=<cep11|cep12|uxp-webview|web-playground>
-  --target=<illustrator-2023|illustrator-2024|illustrator-2025|illustrator-2026|photoshop-2023|photoshop-2026|affinity>
+  --profile=<cep11|cep12|uxp-webview|web-playground|figma-ui>
+  --target=<illustrator-2023|illustrator-2024|illustrator-2025|illustrator-2026|photoshop-2023|photoshop-2026|affinity|figma>
   --compiler=<on|off>                   React Compiler (default on)
   --dry-run                            print the plan without touching the filesystem `;
 
@@ -119,6 +120,10 @@ function printList() {
 
 /** Build one host once; aliases share the generated directory. */
 async function runPlan(plan, options) {
+  if (!options.dryRun && plan.target === 'figma-plugin') {
+    await buildFigma();
+    return;
+  }
   if (!options.dryRun && plan.target === 'illustrator-cep') {
     await buildIllustrator();
     return;
@@ -207,17 +212,21 @@ async function main() {
     console.log(`  notes    ${WEB_PROFILES[profile].notes}`);
     if (!['on', 'off'].includes(options.compiler)) throw new Error('Compiler must be on or off');
     const app =
-      profile === 'web-playground'
-        ? '@astmatrix/playground-web'
-        : profile === 'uxp-webview'
-          ? '@astmatrix/photoshop-uxp'
-          : '@astmatrix/illustrator-cep';
+      profile === 'figma-ui'
+        ? '@astmatrix/figma-plugin'
+        : profile === 'web-playground'
+          ? '@astmatrix/playground-web'
+          : profile === 'uxp-webview'
+            ? '@astmatrix/photoshop-uxp'
+            : '@astmatrix/illustrator-cep';
     const script =
-      profile === 'web-playground'
-        ? 'build:web'
-        : profile === 'uxp-webview'
-          ? 'build:webview'
-          : 'build:panels';
+      profile === 'figma-ui'
+        ? 'build:ui'
+        : profile === 'web-playground'
+          ? 'build:web'
+          : profile === 'uxp-webview'
+            ? 'build:webview'
+            : 'build:panels';
     if (options.dryRun) {
       console.log(`DRY RUN: pnpm --filter ${app} ${script}; compiler=${options.compiler}`);
       return 0;
@@ -257,6 +266,10 @@ async function main() {
 
   if (options.command && isHostTargetId(options.command)) {
     const target = HOST_TARGETS[options.command];
+    if (!options.dryRun && target.id === 'figma-plugin') {
+      await buildFigma();
+      return 0;
+    }
     if (!options.dryRun && target.id === 'illustrator-cep') {
       await buildIllustrator();
       return 0;
