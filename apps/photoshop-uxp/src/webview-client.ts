@@ -1,6 +1,6 @@
 import { HostError, RemoteHostAdapter, validateEnvelope } from '@astmatrix/host-contract';
 import type { HostEnvelope, HostTransport } from '@astmatrix/host-contract';
-import { stableStringify } from '@astmatrix/shared';
+import { LICENSE_URL, PROJECT_URL, stableStringify } from '@astmatrix/shared';
 export const WEBVIEW_CHANNEL = 'astmatrix-webview-v1';
 export interface WebviewClientWindow {
   uxpHost?: { postMessage: (message: unknown) => void };
@@ -174,13 +174,18 @@ export class WebviewTransport implements HostTransport {
       throw new HostError('UNKNOWN_HOST_ERROR', result.error?.message ?? 'SVG 导出失败');
   }
   async openProject(): Promise<void> {
-    const id = `project-${++this.sequence}`;
-    const result = (await this.send(id, { type: 'openProject' })) as {
+    return this.openExternal(PROJECT_URL);
+  }
+  async openExternal(url: string): Promise<void> {
+    if (url !== PROJECT_URL && url !== LICENSE_URL)
+      throw new HostError('INVALID_INPUT', '不支持的外部链接');
+    const id = `external-${++this.sequence}`;
+    const result = (await this.send(id, { type: 'openExternal', url })) as {
       ok: boolean;
       error?: { message: string };
     };
     if (!result.ok)
-      throw new HostError('UNKNOWN_HOST_ERROR', result.error?.message ?? '无法打开 GitHub');
+      throw new HostError('UNKNOWN_HOST_ERROR', result.error?.message ?? '无法打开外部链接');
   }
   dispose(): void {
     this.closed = true;

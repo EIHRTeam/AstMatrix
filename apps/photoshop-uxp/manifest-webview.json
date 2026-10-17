@@ -1,7 +1,7 @@
 {
   "manifestVersion": 5,
   "id": "com.u202f.astmatrix.photoshop.webview",
-  "name": "AstMatrix WebUI",
+  "name": "AstMatrix",
   "version": "0.1.0",
   "main": "index.html",
   "host": [
@@ -18,7 +18,7 @@
       "type": "panel",
       "id": "astmatrix.panel",
       "label": {
-        "default": "AstMatrix WebUI"
+        "default": "AstMatrix"
       },
       "minimumSize": {
         "width": 320,

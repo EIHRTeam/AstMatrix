@@ -32,7 +32,7 @@ try {
         service={service}
         adapter={adapter}
         hostLocale={hostLocale}
-        openProject={() => transport.openProject()}
+        openExternal={(url) => transport.openExternal(url)}
       >
         <AstMatrixPanel />
       </AstMatrixProviders>

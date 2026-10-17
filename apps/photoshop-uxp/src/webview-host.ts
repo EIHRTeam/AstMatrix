@@ -1,13 +1,13 @@
 import { HostError, validateEnvelope } from '@astmatrix/host-contract';
 import type { HostEnvelope, HostResponse } from '@astmatrix/host-contract';
-import { errorMessage, stableStringify } from '@astmatrix/shared';
+import { LICENSE_URL, PROJECT_URL, errorMessage, stableStringify } from '@astmatrix/shared';
 import { WEBVIEW_CHANNEL } from './webview-client';
 interface Peer {
   postMessage: (message: unknown) => void;
 }
 interface WebviewEnvironment {
   locale?: string;
-  openProject?: () => Promise<void>;
+  openExternal?: (url: string) => Promise<void>;
 }
 interface Dispatcher {
   dispatch: (envelope: HostEnvelope, isCurrent: () => boolean) => Promise<HostResponse<unknown>>;
@@ -67,6 +67,7 @@ export class WebviewHostBridge {
       envelope?: HostEnvelope;
       svg?: string;
       name?: string;
+      url?: unknown;
     };
     if (!m || m.channel !== WEBVIEW_CHANNEL) return;
     if (m.type === 'hello') {
@@ -109,11 +110,14 @@ export class WebviewHostBridge {
           throw new HostError('INVALID_INPUT', '无效消息信封');
         validateEnvelope(m.envelope);
         response = await this.adapter.dispatch(m.envelope, isCurrent);
-      } else if (m.type === 'openProject') {
-        if (!this.environment.openProject)
-          throw new HostError('UNSUPPORTED_FEATURE', '无法打开 GitHub');
+      } else if (m.type === 'openProject' || m.type === 'openExternal') {
+        const url = m.type === 'openProject' ? PROJECT_URL : m.url;
+        if (url !== PROJECT_URL && url !== LICENSE_URL)
+          throw new HostError('INVALID_INPUT', '不支持的外部链接');
+        if (!this.environment.openExternal)
+          throw new HostError('UNSUPPORTED_FEATURE', '无法打开外部链接');
         if (!isCurrent()) throw new HostError('CANCELLED', '操作已取消');
-        await this.environment.openProject();
+        await this.environment.openExternal(url);
         response = { ok: true };
       } else if (m.type === 'export' && typeof m.svg === 'string' && typeof m.name === 'string') {
         if (

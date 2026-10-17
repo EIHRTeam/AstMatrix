@@ -2,7 +2,7 @@ import { AstMatrixApplicationService } from '@astmatrix/application';
 import { PhotoshopAdapter } from '@astmatrix/host-adapter-photoshop-uxp';
 import type { PhotoshopRuntime } from '@astmatrix/host-adapter-photoshop-uxp';
 import { HostError } from '@astmatrix/host-contract';
-import { PROJECT_URL, errorMessage } from '@astmatrix/shared';
+import { errorMessage } from '@astmatrix/shared';
 import { mountNativePanel } from '@astmatrix/ui-uxp';
 import type { UxpElement } from '@astmatrix/ui-uxp';
 import { WebviewHostBridge } from './webview-host';
@@ -105,82 +105,88 @@ const startNative = () => {
       exportSvg,
     });
 };
-startNative();
 const status = document.getElementById('webview-status'),
   webview = document.getElementById('astmatrix-webview') as
     | (HTMLElement & { postMessage: (message: unknown) => void })
     | null;
-const nativeButton = document.getElementById('use-native'),
-  webButton = document.getElementById('use-webview');
+const unavailableReason = webview
+  ? localWebviewUnavailableReason(uxp.host.version, uxp.versions.uxp, webview.postMessage)
+  : '未配置 WebView';
+let useWeb = !unavailableReason,
+  visible = true;
 const bridge =
-  webview && typeof webview.postMessage === 'function'
+  webview && useWeb
     ? new WebviewHostBridge(webview, adapter, exportSvg, {
         locale: uxp.host.uiLocale,
-        openProject: async () => {
-          if (!uxp.shell) throw new HostError('UNSUPPORTED_FEATURE', '无法打开 GitHub');
+        openExternal: async (url) => {
+          if (!uxp.shell) throw new HostError('UNSUPPORTED_FEATURE', '无法打开外部链接');
           const message = /^zh/i.test(uxp.host.uiLocale ?? '')
-            ? '在默认浏览器中打开 AstMatrix GitHub 仓库。'
-            : 'Open the AstMatrix GitHub repository in your default browser.';
-          const error = await uxp.shell.openExternal(PROJECT_URL, message);
+            ? '在默认浏览器中打开 AstMatrix 外部链接。'
+            : 'Open the AstMatrix external link in your default browser.';
+          const error = await uxp.shell.openExternal(url, message);
           if (error) throw new HostError('UNKNOWN_HOST_ERROR', error);
         },
       })
     : null;
 const showNative = () => {
+  useWeb = false;
   root.style.display = 'block';
   if (webview) webview.style.display = 'none';
   bridge?.pause();
+  if (visible) startNative();
 };
 const showWeb = () => {
   if (webview) {
     root.style.display = 'none';
     webview.style.display = 'block';
-    bridge?.resume();
   }
 };
-nativeButton?.addEventListener('click', showNative);
-webButton?.addEventListener('click', showWeb);
+const receiveMessage = (event: MessageEvent) => {
+  if (useWeb) void bridge?.receive(event.data);
+};
 if (webview) {
-  const unavailableReason = localWebviewUnavailableReason(
-    uxp.host.version,
-    uxp.versions.uxp,
-    webview.postMessage,
-  );
   if (unavailableReason) {
     const diagnostic = `${unavailableReason}（Photoshop ${uxp.host.version} / ${uxp.versions.uxp}），使用原生面板`;
-    if (status) status.textContent = diagnostic;
+    if (status) {
+      status.textContent = diagnostic;
+      status.style.display = 'block';
+    }
     console.warn('AstMatrix WebView:', diagnostic);
     showNative();
-    if (webButton) (webButton as HTMLButtonElement).disabled = true;
   } else {
     webview.addEventListener('loadstart', () => {
+      if (!useWeb) return;
       bridge?.reload();
-      if (status) status.textContent = 'WebUI 加载中…';
     });
     webview.addEventListener('loadstop', () => {
-      bridge?.initialize();
-      if (status) status.textContent = '本地 WebUI · 离线';
+      if (useWeb && visible) bridge?.initialize();
     });
     webview.addEventListener('loaderror', (event) => {
+      if (!useWeb) return;
       const failure = event as Event & { url?: string; code?: number; message?: string };
       const detail = `${failure.message ?? '未知加载错误'}（${failure.code ?? '无错误码'} / ${failure.url ?? 'plugin:/webview/index.html'}）`;
-      if (status) status.textContent = `WebUI 加载失败：${detail}，已回退原生面板`;
+      if (status) {
+        status.textContent = `WebUI 加载失败：${detail}，已回退原生面板`;
+        status.style.display = 'block';
+      }
       console.warn('AstMatrix WebView:', detail);
       showNative();
     });
-    window.addEventListener('message', (event) => {
-      void bridge?.receive(event.data);
-    });
+    window.addEventListener('message', receiveMessage);
     showWeb();
+    // Start navigation only after checking support and registering failure handlers.
+    webview.setAttribute('src', 'plugin:/webview/index.html');
   }
 }
 const start = () => {
-  bridge?.resume();
-  startNative();
+  visible = true;
+  if (useWeb) bridge?.resume();
+  else showNative();
   adapter.refresh();
   if (!timer) timer = setInterval(adapter.refresh, 750);
 };
 const stop = () => {
+  visible = false;
   bridge?.pause();
   if (timer) {
     clearInterval(timer);
@@ -191,6 +197,8 @@ const stop = () => {
 };
 const destroy = () => {
   stop();
+  useWeb = false;
+  window.removeEventListener('message', receiveMessage);
   adapter.dispose();
   void previewChain.finally(async () => {
     const files = [...retiredPreviews, ...(previewFile ? [previewFile] : [])];

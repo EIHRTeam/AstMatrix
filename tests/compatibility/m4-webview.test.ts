@@ -1,8 +1,9 @@
 import { expect, it, vi } from 'vitest';
+import { LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
 import { WebviewHostBridge } from '../../apps/photoshop-uxp/src/webview-host';
 import { WEBVIEW_CHANNEL, WebviewTransport } from '../../apps/photoshop-uxp/src/webview-client';
 import type { WebviewClientWindow } from '../../apps/photoshop-uxp/src/webview-client';
-import type { HostEnvelope } from '@astmatrix/host-contract';
+import type { HostEnvelope, HostResponse } from '@astmatrix/host-contract';
 import { localWebviewUnavailableReason } from '../../apps/photoshop-uxp/src/webview-support';
 it.each(['uxp-9.3.0-uxp', 'uxp-9.3.0', '9.3.0', 'uxp-8.0.0', 'uxp-9.3.0-beta.1'])(
   'accepts the documented UXP version format %s on Photoshop 27.8.0',
@@ -212,7 +213,7 @@ it('WebView client correlates replies and sends cancellation without prematurely
 
 it('passes the host UI locale during initialization and opens only the configured project action', async () => {
   const messages: Record<string, unknown>[] = [];
-  const openProject = vi.fn<() => Promise<void>>(async () => {});
+  const openExternal = vi.fn<(url: string) => Promise<void>>(async () => {});
   const dispatch = vi.fn<() => Promise<{ requestId: string; ok: true; result: object }>>();
   const bridge = new WebviewHostBridge(
     {
@@ -222,7 +223,7 @@ it('passes the host UI locale during initialization and opens only the configure
     },
     { dispatch },
     async () => {},
-    { locale: 'zh_CN', openProject },
+    { locale: 'zh_CN', openExternal },
   );
   bridge.initialize();
   expect(messages[0]).toMatchObject({ type: 'init', locale: 'zh_CN' });
@@ -233,13 +234,13 @@ it('passes the host UI locale during initialization and opens only the configure
     session: messages[0]!.session,
   };
   await bridge.receive({ ...request, session: 'forged' });
-  expect(openProject).not.toHaveBeenCalled();
+  expect(openExternal).not.toHaveBeenCalled();
   await bridge.receive({ ...request, url: 'https://untrusted.example' });
-  expect(openProject).toHaveBeenCalledExactlyOnceWith();
+  expect(openExternal).toHaveBeenCalledExactlyOnceWith(PROJECT_URL);
   expect(dispatch).not.toHaveBeenCalled();
   expect(messages.at(-1)).toMatchObject({ response: { ok: true } });
   await bridge.receive(request);
-  expect(openProject).toHaveBeenCalledOnce();
+  expect(openExternal).toHaveBeenCalledOnce();
 });
 
 it('accepts locale updates only from the actual UXP host message source', () => {
@@ -273,4 +274,76 @@ it('accepts locale updates only from the actual UXP host message source', () => 
     unsubscribe();
     transport.dispose();
   }
+});
+
+it.each([PROJECT_URL, LICENSE_URL])(
+  'opens %s through the authenticated WebView transport and reports host failures',
+  async (url) => {
+    let receive: Parameters<WebviewClientWindow['addEventListener']>[1] = () => {};
+    const openExternal = vi
+      .fn<(url: string) => Promise<void>>()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('Browser launch failed'));
+    const uxpHost = {
+      postMessage: (message: unknown) => {
+        void bridge.receive(message);
+      },
+    };
+    const bridge = new WebviewHostBridge(
+      { postMessage: (data) => receive({ source: uxpHost, origin: 'plugin-id', data }) },
+      { dispatch: vi.fn<() => Promise<HostResponse<unknown>>>() },
+      async () => {},
+      { openExternal },
+    );
+    const transport = new WebviewTransport({
+      uxpHost,
+      addEventListener: (_name, listener) => {
+        receive = listener;
+      },
+      removeEventListener: () => {},
+    });
+    try {
+      await transport.openExternal(url);
+      expect(openExternal).toHaveBeenCalledExactlyOnceWith(url);
+      await expect(transport.openExternal(url)).rejects.toThrow('Browser launch failed');
+      await expect(transport.openExternal('https://untrusted.example')).rejects.toThrow(
+        '不支持的外部链接',
+      );
+      expect(openExternal).toHaveBeenCalledTimes(2);
+    } finally {
+      transport.dispose();
+    }
+  },
+);
+
+it('rejects forged sessions and unknown external destinations before calling the host', async () => {
+  const messages: Record<string, unknown>[] = [];
+  const openExternal = vi.fn<(url: string) => Promise<void>>();
+  const bridge = new WebviewHostBridge(
+    {
+      postMessage: (message) => {
+        messages.push(message as Record<string, unknown>);
+      },
+    },
+    { dispatch: vi.fn<() => Promise<HostResponse<unknown>>>() },
+    async () => {},
+    { openExternal },
+  );
+  bridge.initialize();
+  const request = {
+    channel: WEBVIEW_CHANNEL,
+    type: 'openExternal',
+    requestId: 'external-1',
+    session: messages[0]!.session,
+    url: LICENSE_URL,
+  };
+  await bridge.receive({ ...request, session: 'forged' });
+  expect(openExternal).not.toHaveBeenCalled();
+  for (const url of ['https://untrusted.example', 'javascript:alert(1)', undefined]) {
+    await bridge.receive({ ...request, requestId: `external-${messages.length}`, url });
+    expect(messages.at(-1)).toMatchObject({
+      response: { ok: false, error: { code: 'INVALID_INPUT' } },
+    });
+  }
+  expect(openExternal).not.toHaveBeenCalled();
 });

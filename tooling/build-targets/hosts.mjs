@@ -131,7 +131,7 @@ export async function buildPhotoshop() {
   await cp(path.join(dist, 'webview'), path.join(enhanced, 'webview'), { recursive: true });
   const html = (await readFile(path.join(native, 'index.html'), 'utf8')).replace(
     '<div id="astmatrix-panel">',
-    '<div><button id="use-webview">WebUI</button><button id="use-native">原生面板</button></div><p id="webview-status"></p><webview id="astmatrix-webview" src="plugin:/webview/index.html"></webview><div id="astmatrix-panel">',
+    '<p id="webview-status" style="display: none"></p><webview id="astmatrix-webview" style="display: none"></webview><div id="astmatrix-panel">',
   );
   await writeFile(path.join(enhanced, 'index.html'), html);
   await report(native, 'photoshop-uxp-native');
