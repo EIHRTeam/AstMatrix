@@ -1,0 +1,149 @@
+name: Release
+
+# Manual, main-only release:
+#   checks -> version/manifest verification -> host bundles -> archives -> tag -> GitHub release
+# Signing and store submission stay manual; see tooling/packaging/package.mjs.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require main branch
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo '::error::Release must be triggered from main'
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read and verify release version
+        id: version
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs'
+
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'))
+          if (typeof version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
+            throw new Error('package.json version must have the form X.Y.Z')
+          }
+
+          // Host manifests carry their own version copy; never tag a mixed build.
+          const cep = readFileSync('apps/illustrator-cep/CSXS/manifest.xml', 'utf8')
+          const cepVersions = [
+            cep.match(/ExtensionBundleVersion="([^"]+)"/)?.[1],
+            ...[...cep.matchAll(/<Extension\b[^>]*\bVersion="([^"]+)"/g)].map((match) => match[1]),
+          ].filter(Boolean)
+          if (cepVersions.length < 2 || cepVersions.some((value) => value !== version)) {
+            throw new Error(`Illustrator CEP manifest version does not match ${version}`)
+          }
+          for (const manifestPath of [
+            'apps/photoshop-uxp/manifest.json',
+            'apps/photoshop-uxp/manifest-webview.json',
+          ]) {
+            const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+            if (manifest.version !== version) {
+              throw new Error(`${manifestPath} version does not match ${version}`)
+            }
+          }
+
+          appendFileSync(process.env.GITHUB_OUTPUT, `tag=v${version}\nversion=${version}\n`)
+          NODE
+
+      - name: Ensure release tag is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::Tag ${TAG} already exists; bump package.json and the host manifests first"
+            exit 1
+          fi
+
+      - name: Run repository checks
+        run: pnpm check
+
+      - name: Build host bundles
+        run: |
+          pnpm build:illustrator
+          pnpm build:photoshop
+          # Figma ships through Figma Community; build it so the aggregate host check covers it.
+          pnpm build:figma
+          pnpm check:host-bundles
+
+      - name: Assemble release assets
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          rm -rf release
+          mkdir -p release/AstMatrix
+
+          # CEP extensions are installed as a named folder under the host extensions directory.
+          cp -R apps/illustrator-cep/dist/. release/AstMatrix/
+          (cd release && zip -qr "AstMatrix-Illustrator-${VERSION}.zip" AstMatrix)
+          rm -rf release/AstMatrix
+
+          # UXP .ccx archives are zip files with manifest.json at the archive root.
+          # Publish only the enhanced (WebView) Photoshop package.
+          (cd apps/photoshop-uxp/dist/enhanced && \
+            zip -qr "${GITHUB_WORKSPACE}/release/AstMatrix-Photoshop-${VERSION}.ccx" .)
+
+          ls -lh release
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: AstMatrix-${{ steps.version.outputs.version }}
+          path: release/*
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Create release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          # Creating a ref fails if it already exists, even for the same commit.
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f "ref=refs/tags/${TAG}" \
+            -f "sha=$(git rev-parse HEAD)"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          files: release/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
