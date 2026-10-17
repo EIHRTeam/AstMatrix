@@ -1,8 +1,9 @@
 const { chromium } = await import(process.env.ASTMATRIX_PLAYWRIGHT_MODULE ?? 'playwright');
 import { createServer } from 'node:http';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 const root = resolve('apps/illustrator-cep/dist/web');
+const destination = resolve(process.env.ASTMATRIX_REPORT_DIR ?? 'tmp/web-comparison');
 const server = createServer(async (req, res) => {
   try {
     const pathname = new URL(req.url, 'http://localhost').pathname;
@@ -141,12 +142,13 @@ try {
       });
       await context.close();
     }
+  await mkdir(destination, { recursive: true });
   await writeFile(
-    resolve('docs/plan/evidence/M2-08/2026-10-14/compiler-comparison.json'),
+    resolve(destination, 'comparison.json'),
     JSON.stringify(
       {
-        task: 'M2-08',
-        date: '2026-10-14',
+        suite: 'web-compiler-comparison',
+        generatedAt: new Date().toISOString(),
         browser: await browser.version(),
         platform: process.platform,
         arch: process.arch,
@@ -156,7 +158,7 @@ try {
         method:
           'Settings click to visible DOM commit via MutationObserver; QR input to ready DOM including fixed 150ms debounce, encode, IR and SVG; production bundles in current Chrome. Not React Profiler CPU duration or real CEP measurement.',
         limitations:
-          'No performance guarantee inferred from these small samples; real CEP runtime, host timing and peak memory remain M3/M6.',
+          'No performance guarantee inferred from these small samples; real CEP runtime, host timing and peak memory remain separate acceptance work.',
         records,
       },
       null,

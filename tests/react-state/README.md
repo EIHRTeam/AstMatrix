@@ -1,10 +1,7 @@
-# react-state — layer 5
+# react-state
 
-React state and UI tests (§11.1, §11.7): provider composition, the pure Selection reducer,
-symbology/profile linkage, the form and preview-controller boundary, high-frequency input,
-stale async results, context propagation, React Compiler build compatibility and React 19.3
-behaviour under the CEP profiles.
+React state and UI tests: provider composition, the pure Selection reducer, symbology/profile
+linkage, the form and preview-controller boundary, high-frequency input, stale async results,
+clipboard and insert feedback, localization, and startup/fallback behavior.
 
 Runs in the `jsdom` Vitest project (see the repository root `vitest.config.ts`).
-
-Status: no cases authored yet (skeleton).

@@ -6,8 +6,9 @@ AstMatrix is an offline-first barcode plugin skeleton. `apps/` contains the play
 and Illustrator CEP, Photoshop UXP, and Affinity entries. `packages/` contains encoding,
 profiles, catalog, vector IR, SVG rendering, services, UI, and host adapters.
 `tooling/` owns builds and packaging; `tests/` holds fixtures and layered suites.
-Bundle host resources with their app. Read `docs/plan/INIT.md` for architecture,
-`docs/plan/README.md` for M0–M7 tasks, and `docs/plan/TRACKING.md` for progress.
+Bundle host resources with their app. Architecture and test intent are documented in
+package headers and `tests/README.md`; build and test do not require a planning or evidence
+directory.
 
 ## Build, Test, and Development Commands
 
@@ -15,16 +16,17 @@ Use Node.js 24 LTS and pinned pnpm 12.11.2.
 
 - `pnpm install --frozen-lockfile`: install workspace dependencies reproducibly.
 - `pnpm dev`: run the browser playground.
-- `pnpm check`: run workspace typechecks, lint, formatting checks, and tests.
+- `pnpm check`: run workspace typechecks, lint, formatting, syntax and policy checks, and tests.
 - `pnpm fmt`: format supported files with Oxfmt.
-- `pnpm test:conformance`, `pnpm test:vector`, `pnpm test:react-state`: run focused suites.
+- `pnpm test:conformance`, `pnpm test:vector`, `pnpm test:react-state`, `pnpm test:decode`: run focused suites.
+- `pnpm benchmark:core` and `pnpm decode:core`: produce optional reports under `tmp/`.
 - `pnpm build:illustrator`, `pnpm build:photoshop`, `pnpm build:affinity`: resolve host build plans.
 - `pnpm package`: print the packaging plan.
 
-Illustrator and Photoshop builds now emit development plugin directories; Affinity and signed packaging remain plans. `pnpm build:web --profile=cep11` and
-`--profile=cep12` now emit real Web bundles; `--compiler=off` emits separate comparison
-bundles and `--dry-run` only resolves the plan. The playground also builds via
-`pnpm build:web --profile=web-playground`.
+Illustrator and Photoshop builds emit development plugin directories; Affinity and signed
+packaging remain plans. `pnpm build:web --profile=cep11` and `--profile=cep12` emit real Web
+bundles; `--compiler=off` emits separate comparison bundles and `--dry-run` only resolves the
+plan. The playground also builds via `pnpm build:web --profile=web-playground`.
 
 ## Coding Style & Naming Conventions
 
@@ -47,13 +49,14 @@ Keep generation offline. Do not commit secrets, SDK archives in `tmp/`, or gener
 Use Vitest: colocate unit `*.test.ts` files; place layered tests under their matching
 `tests/` directories, with React tests also using `*.test.tsx`. No numeric coverage
 threshold is configured; cover changed behavior, invalid inputs, geometry, and
-asynchronous races. Empty suites currently pass; this is not implementation evidence.
-Scanning and editable-vector acceptance require independent decoders and real hosts.
+asynchronous races. Every project except the explicit `host-integration` placeholder fails on
+an empty run. Scanning and editable-vector acceptance require independent decoders and real
+hosts; automated tests do not substitute for them.
 
 ## Commit & Pull Request Guidelines
 
 Follow existing `docs:` and `chore:` prefixes with concise action summaries.
-Keep PRs focused: explain behavior, link issues or task IDs, report validation/blockers,
+Keep PRs focused: explain behavior, link issues, report validation/blockers,
 and attach UI screenshots. Integration results need host/runtime, OS, and architecture.
 
 ## Agent Documentation Lookup

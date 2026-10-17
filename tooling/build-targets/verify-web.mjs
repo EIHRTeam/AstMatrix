@@ -1,9 +1,9 @@
 import { readFileSync, existsSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { parse } from 'acorn';
-const destination = process.argv[2] ?? 'docs/plan/evidence/M2-08/2026-10-14/bundles.json';
+const destination = process.argv[2] ?? 'tmp/web-bundles.json';
 const records = [];
 for (const profile of ['cep11', 'cep12'])
   for (const compiler of ['on', 'off']) {
@@ -74,18 +74,18 @@ for (const profile of ['cep11', 'cep12'])
         newApiAudit: 'pass',
         cssBaseline: 'pass',
         notices: 'pass',
-        runtime: 'Current Chrome browser only; real CEP 11/12 acceptance remains M3',
+        runtime: 'Current Chrome browser only; real CEP 11/12 acceptance remains separate',
       },
       artifacts,
     });
   }
-mkdirSync(destination.slice(0, destination.lastIndexOf('/')), { recursive: true });
+mkdirSync(dirname(destination), { recursive: true });
 writeFileSync(
   destination,
   JSON.stringify(
     {
-      task: 'M2-07/08',
-      date: '2026-10-14',
+      suite: 'web-bundle-verification',
+      generatedAt: new Date().toISOString(),
       scope: 'Static bundle proof; no real host compatibility claim',
       records,
     },

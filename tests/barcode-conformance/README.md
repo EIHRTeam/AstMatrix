@@ -1,9 +1,9 @@
-# barcode-conformance — layer 1
+# barcode-conformance
 
-Encoding tests (§11.1): valid and invalid input, check digits, profile mapping, composite
-component layout, special characters and standard vectors.
+Encoding tests: catalog mapping and uniqueness, business profiles, check digits, special
+characters, capacity handling, recovery parameters, every admitted format, and the Code 49
+extension.
 
-Rule: a catalog entry is not "supported" because it encodes something. Independent
-conformance and scan results decide its published support status (§1.1, §3.6).
-
-Status: no cases authored yet (skeleton).
+A catalog entry is not "supported" because it encodes something. Independent conformance and
+scan results decide its published support status; these tests only verify the shared encoder,
+profile, and recovery pipeline.

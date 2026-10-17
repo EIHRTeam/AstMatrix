@@ -20,6 +20,8 @@ const english: Record<string, string> = {
   编码格式: 'Symbology',
   业务预设: 'Preset',
   未实现: 'Not implemented',
+  '共享编码、业务预设与矢量输出已实现；独立符合性与真实宿主验收尚未完成。':
+    'Shared encoding, presets and vector output are implemented. Independent conformance and real-host acceptance are not yet verified.',
   编码内容: 'Content',
   '模块宽度（mm）': 'Module width (mm)',
   '前景色（RGB hex）': 'Foreground (RGB hex)',

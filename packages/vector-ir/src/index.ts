@@ -58,8 +58,8 @@ export interface VectorScene {
     dimensions?: { moduleMm: number; heightMm: number };
   };
 }
+/** Persisted compatibility identifier. Inserted objects store this value; do not rename it. */
 export const LAYOUT_VERSION = 'm1-mm-v1';
-export const SPIKE_LAYOUT_VERSION = 'm0-mm-v1';
 export const GEOMETRY_TOLERANCE_MM = 1e-8;
 export function validateColor(color: Color): void {
   if (color.space === 'RGB') {

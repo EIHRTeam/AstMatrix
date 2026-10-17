@@ -1,14 +1,14 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * Test projects mapped to the layers in docs/plan/INIT.md §11.
+ * Test projects grouped by behavior.
  *
- * Layer 3 shared-SVG decoding uses real locally installed ZXing/ZBar WASM in Node.
- * Layer 4 still requires installed Adobe/Affinity applications and human host acceptance;
- * the shared decode project does not replace actual host exports or physical scanner evidence.
+ * The decode project uses locally installed ZXing/ZBar WASM in Node. Real host integration
+ * still requires installed Adobe/Affinity applications and human acceptance; the decode
+ * project does not replace actual host exports or physical scanner checks.
  *
- * M1/M2 shared, geometry, application, UI, compatibility and decode layers reject empty runs.
- * Only host-integration remains an explicit placeholder; it supplies no release evidence.
+ * Every project except host-integration rejects empty runs. host-integration remains an
+ * explicit placeholder because it can only run with real host applications installed.
  */
 
 const shared = {
@@ -17,7 +17,7 @@ const shared = {
 
 export default defineConfig({
   test: {
-    // The root suite now requires real tests. Empty placeholder projects are still explicit.
+    // The root suite requires real tests. The host-integration placeholder stays explicit.
     passWithNoTests: false,
     projects: [
       {
@@ -67,8 +67,8 @@ export default defineConfig({
       },
       {
         test: {
-          ...shared,
           name: 'host-integration',
+          passWithNoTests: true,
           environment: 'node',
           include: ['tests/host-integration/**/*.test.ts'],
         },

@@ -20,7 +20,7 @@ function files(directory: string): string[] {
 const sha = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
 export function webBuildAssets(profile: WebProfileId, compiler: boolean): Plugin {
   return {
-    name: 'astmatrix-build-evidence-and-font-notices',
+    name: 'astmatrix-build-info-and-font-notices',
     generateBundle() {
       const config = resolveWebBuild(profile),
         paths = [
@@ -59,7 +59,7 @@ export function webBuildAssets(profile: WebProfileId, compiler: boolean): Plugin
         this.emitFile({
           type: 'asset',
           fileName: 'licenses/' + name,
-          source: readFileSync(join(root, 'tests/compatibility/spikes/licenses', name), 'utf8'),
+          source: readFileSync(join(root, 'licenses', name), 'utf8'),
         });
       this.emitFile({
         type: 'asset',

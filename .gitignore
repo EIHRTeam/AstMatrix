@@ -152,7 +152,7 @@ vite.config.ts.timestamp-*
 # AstMatrix
 # ---------------------------------------------------------------------------
 
-# Build output: dist/ is generated and never tracked (docs/plan/INIT.md §6.1)
+# Build output: dist/ is generated and never tracked.
 dist/
 release/
 *.zxp

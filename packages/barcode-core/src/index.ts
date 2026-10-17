@@ -18,6 +18,10 @@ import { encoders, drawingUnitsPerModule } from './encoders';
 import { providerOptions, usesUtf8Eci } from './options';
 import { ellipseCommands } from './curves';
 export { providerOptions } from './options';
+/**
+ * Persisted engine identifier written into inserted-object metadata. The encoded BWIPP/provider
+ * value is a compatibility token for restore checks; do not rename it without a migration.
+ */
 export const ENGINE_VERSION = `bwip-js:${BWIPJS_VERSION};BWIPP:${BWIPP_VERSION};provider:m7-v1`;
 export interface EncodeProvider {
   readonly engineVersion: string;
@@ -242,6 +246,7 @@ function recoveryFields(request: NormalizedRequest): Record<string, unknown> {
 }
 export const bwipProvider: EncodeProvider = {
   engineVersion: ENGINE_VERSION,
+  // Read-only compatibility list for metadata written by earlier pre-release provider versions.
   restorableEngineVersions: [
     ENGINE_VERSION,
     ENGINE_VERSION.replace('provider:m7-v1', 'provider:m1-v1'),

@@ -7,7 +7,7 @@ import {
   validateResponse,
   updatePlacedObject,
 } from '@astmatrix/host-contract';
-import { basicSamples } from '../../../tests/fixtures/m1';
+import { basicSamples } from '../../../tests/fixtures/core-samples';
 import type { NormalizedRequest } from '@astmatrix/profiles';
 import type { VectorScene } from '@astmatrix/vector-ir';
 const input = (text: string) => ({ ...basicSamples[3]!, fields: { text } });
@@ -237,7 +237,7 @@ it('capability and protocol validation fail closed, including unsupported update
   );
 });
 
-it('restores M1 metadata from the same locked engine while keeping provider output version checks strict', async () => {
+it('restores earlier pre-release metadata from the same locked engine while rejecting unknown versions', async () => {
   const service = new AstMatrixApplicationService();
   const generated = await service.generate(basicSamples[0]!);
   const legacy = {

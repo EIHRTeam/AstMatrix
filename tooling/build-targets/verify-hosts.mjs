@@ -3,7 +3,7 @@ import { readFile, access, readdir, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { parse } from 'acorn';
 import { createHash } from 'node:crypto';
-const destination = process.argv[2] ?? 'tmp/m34-host-bundles.json';
+const destination = process.argv[2] ?? 'tmp/host-bundles.json';
 const roots = [
   'apps/illustrator-cep/dist',
   'apps/photoshop-uxp/dist/native',

@@ -1,10 +1,16 @@
 # compatibility
 
-Compatibility records and matrix checks (§11.3, §11.4, §11.5).
+Local contract tests for the host-facing layers:
 
-Every real-host run must record: full host version, CEP/UXP/SDK version, OS and version, CPU
-architecture, plugin build version, Web Profile and the result (§11.3). Platform checks cover
-path separators, file-name case, Unicode, fonts, colour space, DPI and physical size,
-lifecycle, save/reopen and offline behaviour (§11.4).
+- CEP bootstrap profile selection and native version fields.
+- CEP transport chunking, strict JSON, cancellation, and cleanup.
+- Illustrator renderer metadata, geometry validation, and rollback behavior.
+- Photoshop adapter history, DPI conversion, fill topology, metadata, and cancellation.
+- Photoshop local WebView version checks and message-bridge handshake.
+- Host manifests and their compatibility floors.
 
-Status: no records authored yet (skeleton).
+These tests use mocks and captured native inputs. They are not real-host records. A real-host
+run must separately record the full host version, CEP/UXP/SDK version, OS and architecture,
+plugin build version, Web Profile, and result. Platform checks cover path separators, filename
+case, Unicode, fonts, colour space, DPI, physical size, lifecycle, save/reopen, and offline
+behavior.

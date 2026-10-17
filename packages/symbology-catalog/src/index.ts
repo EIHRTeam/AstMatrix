@@ -7,9 +7,10 @@ export type SupportStatus =
   | 'host-tested'
   | 'standard-verified'
   | 'released';
+export type CatalogCategory = 'retail' | 'industrial' | 'publication' | 'matrix';
 export interface CatalogEntry {
   sourceId: string;
-  section: '3.1' | '3.2' | '3.3' | '3.4';
+  category: CatalogCategory;
   label: string;
   symbologyIds: readonly string[];
   profileIds: readonly string[];
@@ -26,11 +27,10 @@ export interface SymbologyDefinition {
   profileIds: readonly string[];
   status: SupportStatus;
   reason: string;
-  evidence: readonly string[];
 }
-const groups: { section: CatalogEntry['section']; entries: [string, string[], string[]][] }[] = [
+const groups: { category: CatalogCategory; entries: [string, string[], string[]][] }[] = [
   {
-    section: '3.1',
+    category: 'retail',
     entries: [
       ['EAN-8', ['ean8'], ['ean8-default']],
       ['EAN-13', ['ean13'], ['ean13-default']],
@@ -44,7 +44,7 @@ const groups: { section: CatalogEntry['section']; entries: [string, string[], st
     ],
   },
   {
-    section: '3.2',
+    category: 'industrial',
     entries: [
       ['Code-128', ['code128'], ['code128-default']],
       ['Code-11', ['code11'], []],
@@ -61,7 +61,7 @@ const groups: { section: CatalogEntry['section']; entries: [string, string[], st
     ],
   },
   {
-    section: '3.3',
+    category: 'publication',
     entries: [
       ['ISBN 13', ['isbn'], ['isbn13']],
       ['ISBN 13 + 5 Digits', ['isbn'], ['isbn13-addon5']],
@@ -71,7 +71,7 @@ const groups: { section: CatalogEntry['section']; entries: [string, string[], st
     ],
   },
   {
-    section: '3.4',
+    category: 'matrix',
     entries: [
       ['QR Code', ['qrcode'], ['qr-default']],
       ['QR Mobile/Smartphone', ['qrcode'], ['qr-mobile']],
@@ -91,10 +91,10 @@ const groups: { section: CatalogEntry['section']; entries: [string, string[], st
   },
 ];
 export const originalCatalog: readonly CatalogEntry[] = deepFreeze(
-  groups.flatMap(({ section, entries }) =>
+  groups.flatMap(({ category, entries }) =>
     entries.map(([label, symbologyIds, profileIds], i) => ({
-      sourceId: `${section}-${i + 1}`,
-      section,
+      sourceId: `${category}-${i + 1}`,
+      category,
       label,
       symbologyIds,
       profileIds: profileIds.length ? profileIds : symbologyIds.map((id) => `${id}-default`),
@@ -105,7 +105,7 @@ export const originalCatalog: readonly CatalogEntry[] = deepFreeze(
 export const additionalCatalog: readonly CatalogEntry[] = deepFreeze([
   {
     sourceId: 'extension-code49',
-    section: '3.4',
+    category: 'matrix',
     label: 'Code 49',
     symbologyIds: ['code49'],
     profileIds: ['code49-default'],
@@ -143,7 +143,7 @@ function quietModules(id: string): [number, number, number, number] {
   return [10, 10, 0, 0];
 }
 const matrixIds = new Set(
-  catalog.filter((entry) => entry.section === '3.4').flatMap((entry) => entry.symbologyIds),
+  catalog.filter((entry) => entry.category === 'matrix').flatMap((entry) => entry.symbologyIds),
 );
 export const symbologies: readonly SymbologyDefinition[] = deepFreeze(
   [...new Set(catalog.flatMap((entry) => entry.symbologyIds))].map((id) => {
@@ -176,14 +176,7 @@ export const symbologies: readonly SymbologyDefinition[] = deepFreeze(
       defaultProfileId: baseProfiles[id]?.[0] ?? profileIds[0]!,
       profileIds,
       status: 'implemented',
-      reason: baseProfiles[id]
-        ? '共享 IR/SVG 已实现；行业与真实宿主符合性仍由 M7 验收。'
-        : '共享编码/Profile/IR 已实现；独立解码、行业规范与真实宿主验收范围见 M7 证据。',
-      evidence: baseProfiles[id]
-        ? ['tests/barcode-conformance/m1.test.ts', 'tests/vector-golden/m1.test.ts']
-        : id === 'code49'
-          ? ['tests/barcode-conformance/code49.test.ts', 'docs/plan/evidence/M7-CODE49/README.md']
-          : ['tests/barcode-conformance/m7.test.ts', 'docs/plan/evidence/M7-ENCODERS/README.md'],
+      reason: '共享编码、业务预设与矢量输出已实现；独立符合性与真实宿主验收尚未完成。',
     } satisfies SymbologyDefinition;
   }),
 );

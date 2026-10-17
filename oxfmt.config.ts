@@ -1,7 +1,7 @@
 import { defineConfig } from 'oxfmt';
 
 /**
- * AstMatrix formatter baseline (docs/plan/INIT.md §6.6).
+ * AstMatrix formatter baseline.
  *
  * Oxfmt is the only formatter in this repository; Prettier and Biome are not used in
  * parallel. Files whose syntax must not be rewritten are listed in `.prettierignore`

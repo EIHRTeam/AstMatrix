@@ -1,7 +1,8 @@
 import { resolve } from 'node:path';
 const { chromium } = await import(process.env.ASTMATRIX_PLAYWRIGHT_MODULE ?? 'playwright');
-import { writeFile } from 'node:fs/promises';
-const destination = resolve('docs/plan/evidence/M2-08/2026-10-14');
+import { mkdir, writeFile } from 'node:fs/promises';
+const destination = resolve(process.env.ASTMATRIX_QA_DIR ?? 'tmp/browser-qa');
+await mkdir(resolve(destination, 'screens'), { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const page = await browser.newPage({
   viewport: { width: 1280, height: 900 },
@@ -106,13 +107,12 @@ try {
     destination + '/browser-qa.json',
     JSON.stringify(
       {
-        date: '2026-10-14',
+        suite: 'playground-browser-qa',
+        generatedAt: new Date().toISOString(),
         browser: await browser.version(),
         url: page.url(),
         title: await page.title(),
         viewports: ['1280x900', '390x844'],
-        browserPlugin: 'absent',
-        fallback: 'bundled Playwright 1.62.1; Browser plugin not available',
         checks,
         consoleErrors,
         pageErrors,

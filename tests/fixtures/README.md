@@ -1,10 +1,11 @@
 # fixtures
 
-Shared golden samples from §11.2: EAN-13 `6901234567892`, EAN-8, Code 128 `ABC-12345`,
-GS1-128 structured AI fields, EAN-13 Composite, QR Code, Data Matrix `ABC123`, MaxiCode,
-PDF417, Mailmark 2D and NTIN/PPN market examples.
+Shared regression inputs and captured runtime data:
 
-Data that has not been confirmed against the relevant standard must never be presented as
-"standard verified" (§11.2).
+- `core-samples.ts`: EAN-13, EAN-8, Code 128, QR, and Data Matrix requests used by conformance,
+  vector, and decode tests and by the core benchmark.
+- `illustrator-cep-runtime.ts`: captured Illustrator/CEP version fields, kept as strings to
+  reproduce the native bridge serialization.
 
-Status: no fixtures added yet (skeleton).
+Constructed samples are not standards certification. Data that has not been confirmed against
+the relevant standard must never be presented as "standard verified".

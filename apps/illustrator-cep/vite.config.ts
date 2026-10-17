@@ -8,16 +8,16 @@ import { webBuildAssets } from '@astmatrix/tooling/web-assets';
 import { WEB_PROFILE_IDS, isWebProfileId, resolveWebBuild } from '@astmatrix/tooling/web-profiles';
 
 /**
- * Illustrator CEP panel build (docs/plan/INIT.md §4.4, §4.5, §4.7).
+ * Illustrator CEP panel build.
  *
  * One ZXP may ship several Web UI bundles (`web/cep11`, `web/cep12`) built from the same
- * source; this config builds exactly one profile per invocation so that the build cache in
- * §6.10 can key on it.
+ * source; this config builds exactly one profile per invocation so that the build cache can
+ * key on it.
  *
  *   ASTMATRIX_WEB_PROFILE=cep11 pnpm --filter @astmatrix/illustrator-cep build:panels
  *
  * The same panel source is compiled for both profiles. Copying sources per annual version is
- * explicitly forbidden (§2.3).
+ * explicitly forbidden.
  */
 
 const requestedProfile = process.env.ASTMATRIX_WEB_PROFILE ?? 'cep11';

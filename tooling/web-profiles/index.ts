@@ -1,23 +1,23 @@
 /**
- * Web build profiles (docs/plan/INIT.md §4.3, §4.5).
+ * Web build profiles.
  *
  * A Web Profile determines the JavaScript/CSS compilation target of a Web UI bundle. It is
  * deliberately expressed as explicit browser versions (`chrome88`, `chrome99`) rather than
  * ECMAScript years, because Chromium feature support does not line up with ES editions.
  *
- * Two of the build targets in §4.3 are not browser environments at all
- * (`uxp-native`, `affinity-script`). They are listed separately in `NON_BROWSER_PROFILES`
- * because a Chrome version cannot describe their runtime compatibility.
+ * Some build targets (`uxp-native`, `affinity-script`) are not browser environments at all.
+ * They are listed separately in `NON_BROWSER_PROFILES` because a Chrome version cannot
+ * describe their runtime compatibility.
  *
  * NOTE: `build.target` only handles syntax. Missing Web APIs are not polyfilled by Vite,
- * TypeScript or React Compiler (§4.5). Each profile must be validated in its real host.
+ * TypeScript or React Compiler. Each profile must be validated in its real host.
  */
 
 export type WebProfileId = 'cep11' | 'cep12' | 'uxp-webview' | 'web-playground';
 
 export interface WebProfile {
   readonly id: WebProfileId;
-  /** Vite `build.target`. `null` means "resolve during the spike, not yet pinned". */
+  /** Vite `build.target`. `null` means "not pinned until measured in the real runtime". */
   readonly target: string | null;
   /** Vite `build.cssTarget`; `null` defers the CSS target to Vite's own default. */
   readonly cssTarget: string | null;
@@ -65,8 +65,8 @@ export const WEB_PROFILES = {
 export const WEB_PROFILE_IDS = Object.keys(WEB_PROFILES) as WebProfileId[];
 
 /**
- * Build targets that are not browsers. They must not be described with a Chromium version
- * (§4.3), and their compatibility is proven by host integration tests only.
+ * Build targets that are not browsers. They must not be described with a Chromium version,
+ * and their compatibility is proven by host integration tests only.
  */
 export const NON_BROWSER_PROFILES = {
   'uxp-native': {
@@ -77,8 +77,7 @@ export const NON_BROWSER_PROFILES = {
   'affinity-script': {
     id: 'affinity-script',
     hosts: ['affinity-script'],
-    notes:
-      'Affinity Scripting JavaScript environment; bwip-js compatibility still to be spiked (§7.3).',
+    notes: 'Affinity Scripting JavaScript environment; runtime compatibility is still unverified.',
   },
 } as const;
 
@@ -88,7 +87,7 @@ export function isWebProfileId(value: string): value is WebProfileId {
 
 /**
  * Vite options for a profile. Returned as plain data so build scripts and application
- * Vite configs share exactly one definition (§4.5).
+ * Vite configs share exactly one definition.
  */
 export function resolveWebBuild(profile: WebProfileId): {
   base: string;
@@ -97,7 +96,7 @@ export function resolveWebBuild(profile: WebProfileId): {
   const entry = WEB_PROFILES[profile];
   if (entry.target === null) {
     throw new Error(
-      `Web profile "${profile}" has no pinned compilation target yet. It must be measured in the real runtime before it can be built (docs/plan/INIT.md §16).`,
+      `Web profile "${profile}" has no pinned compilation target yet. It must be measured in the real runtime before it can be built.`,
     );
   }
   return {

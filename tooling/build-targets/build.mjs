@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AstMatrix build entry (docs/plan/INIT.md §6.8, §6.9).
+ * AstMatrix build entry.
  *
  * Usage
  *   node tooling/build-targets/build.mjs --list
@@ -39,7 +39,7 @@ const USAGE = `AstMatrix build
 Commands
   illustrator | photoshop | affinity   build one host target
   web --profile=<profile>              build one Web UI profile
-  target --target=<annual-alias>       build through an annual alias (§4.4)
+  target --target=<annual-alias>       build through an annual alias
   all                                  resolve every host target
   --list                               print the target/profile/alias tables
 
@@ -151,8 +151,8 @@ async function runPlan(plan, options) {
   }
   console.log(
     options.dryRun
-      ? 'DRY RUN: host resources and bundles only; signing remains M6.'
-      : 'Affinity build remains a plan (M5).',
+      ? 'DRY RUN: host resources and bundles only; signing is not implemented.'
+      : 'Affinity build is not implemented yet.',
   );
 }
 
@@ -272,7 +272,7 @@ async function main() {
       `  profiles  ${[...target.webProfiles, ...target.uiProfiles].join(', ') || '(none)'}`,
     );
     console.log(
-      options.dryRun ? 'DRY RUN: no artifacts produced.' : 'Affinity remains a plan (M5).',
+      options.dryRun ? 'DRY RUN: no artifacts produced.' : 'Affinity build is not implemented yet.',
     );
     return 0;
   }

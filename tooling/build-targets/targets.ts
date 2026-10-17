@@ -1,5 +1,5 @@
 /**
- * Host targets and annual aliases (docs/plan/INIT.md §4.2, §4.4, §4.8, §6.10).
+ * Host targets and annual aliases.
  *
  * Three independent concepts stay separate:
  *   Host Target         which plugin runtime and adapter to use
@@ -8,7 +8,7 @@
  *
  * Annual entries (`illustrator-2026`) are only aliases for a Host Target plus a Web
  * Profile. They must never become separate projects or duplicate identical bundles; the
- * caching keys in §6.10 exist precisely so that 2023 and 2024 share one `cep11` compile.
+ * cache key exists precisely so that 2023 and 2024 share one `cep11` compile.
  */
 
 export type HostTargetId = 'illustrator-cep' | 'photoshop-uxp' | 'affinity-script';
@@ -66,13 +66,13 @@ export interface ResolvedBuildPlan {
   readonly alias: AnnualAlias;
   readonly target: HostTargetId;
   readonly webProfiles: readonly string[];
-  /** `true` when the annual version spans the CEP upgrade boundary (§4.4). */
+  /** `true` when the annual version spans the CEP upgrade boundary. */
   readonly runtimeResolutionRequired: boolean;
   readonly notes: string;
 }
 
 /**
- * Annual alias table (§4.4). Illustrator 2025 is the CEP 11 -> 12 boundary year and is
+ * Annual alias table. Illustrator 2025 is the CEP 11 -> 12 boundary year and is
  * marked as requiring an explicit runtime read instead of a single Chromium tier.
  */
 export const ANNUAL_ALIASES = {
@@ -138,7 +138,7 @@ export function isAnnualAlias(value: string): value is AnnualAlias {
 }
 
 /**
- * Cache key inputs for the build dedupe rules in §6.10. Hashing the sources themselves is
+ * Cache key inputs for build deduplication. Hashing the sources themselves is
  * the build script's job; this function only defines what has to participate.
  */
 export function buildCacheKeyParts(input: {

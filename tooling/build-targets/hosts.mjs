@@ -25,7 +25,7 @@ async function notices(directory) {
   await cp(path.join(engine, 'LICENSE'), path.join(directory, 'licenses/BWIP-JS-MIT.txt'));
   for (const font of ['OCR-A', 'OCR-B'])
     await cp(
-      path.join(root, `tests/compatibility/spikes/licenses/${font}-NOTICE.txt`),
+      path.join(root, `licenses/${font}-NOTICE.txt`),
       path.join(directory, `licenses/${font}-NOTICE.txt`),
     );
 }
