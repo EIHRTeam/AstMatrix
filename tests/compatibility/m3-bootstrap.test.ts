@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { expect, it, vi } from 'vitest';
 import { selectCepProfile } from '@astmatrix/host-adapter-illustrator-cep';
+import { illustratorCepRuntime } from '../fixtures/illustrator-cep-runtime';
 
 const vendor = readFileSync('apps/illustrator-cep/vendor/CSInterface.js', 'utf8');
 const bootstrap = readFileSync('apps/illustrator-cep/bootstrap/index.js', 'utf8');
@@ -25,14 +26,9 @@ function start(host: { appId: string; appVersion: string }, major: number | stri
   return { replace, status };
 }
 
-it('reproduces native string version fields from the existing Illustrator host report', () => {
-  const report = JSON.parse(
-    readFileSync('docs/plan/evidence/M0/2026-10-14-hotfix-02/user-report.json', 'utf8'),
-  ) as { illustrator: { host: string; cep: { major: string } } };
-  const { replace, status } = start(
-    { appId: 'ILST', appVersion: report.illustrator.host },
-    report.illustrator.cep.major,
-  );
+it('reproduces captured native string version fields from the Illustrator host', () => {
+  const { host, cep } = illustratorCepRuntime;
+  const { replace, status } = start(host, cep.major);
   expect(replace).toHaveBeenCalledWith('../web/cep12/index.html');
   expect(status.textContent).toBe('');
 });

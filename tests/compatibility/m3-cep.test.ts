@@ -10,6 +10,7 @@ import {
 import type { CSInterfaceLike } from '@astmatrix/host-adapter-illustrator-cep';
 import type { HostEnvelope } from '@astmatrix/host-contract';
 import { profiles } from '@astmatrix/profiles';
+import { illustratorCepRuntime } from '../fixtures/illustrator-cep-runtime';
 const sources = ['json.jsx', 'renderer.jsx', 'astmatrix.jsx']
   .map((f) => readFileSync('apps/illustrator-cep/jsx/' + f, 'utf8'))
   .join('\n');
@@ -69,11 +70,8 @@ describe('M3 strict CEP transport and ES3 dispatcher (no real Illustrator eviden
   });
   it('accepts the captured native CEP string components when creating the production transport', async () => {
     const { cs } = environment();
-    const report = JSON.parse(
-      readFileSync('docs/plan/evidence/M0/2026-10-14-hotfix-02/user-report.json', 'utf8'),
-    ) as { illustrator: { host: string; cep: { major: string; minor: string; micro: string } } };
-    cs.getHostEnvironment = () => ({ appId: 'ILST', appVersion: report.illustrator.host });
-    cs.getCurrentApiVersion = () => report.illustrator.cep;
+    cs.getHostEnvironment = () => illustratorCepRuntime.host;
+    cs.getCurrentApiVersion = () => illustratorCepRuntime.cep;
     const adapter = new IllustratorCepAdapter(cs);
     await adapter.refresh();
     expect(adapter.getSnapshot().documentId).toBeNull();
