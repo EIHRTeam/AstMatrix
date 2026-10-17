@@ -24,3 +24,5 @@ docs/plan/evidence/**/*.json
 
 # Unmodified Adobe CEP redistributables.
 apps/illustrator-cep/vendor/**
+
+README.md

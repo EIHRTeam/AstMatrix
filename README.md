@@ -26,6 +26,7 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 **Manual**
 
 1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+
 2. Open the downloaded zip file with any zip archive software (e.g., 7-Zip, ShichiZip, Keka), extract the contents to the following directory:
 
     - Windows: `%APPDATA%\Roaming\Adobe\CEP\extensions\`
@@ -37,6 +38,7 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
     - macOS: Open Terminal, run the command `defaults write com.adobe.CSXS.12 PlayerDebugMode 1`.
 
 4. Fully restart Adobe Illustrator to load the plugin.
+
 5. Select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
 
 ### Adobe Photoshop
@@ -49,6 +51,7 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 **Manual**
 
 1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+
 2. Doble-click the downloaded `.ccx` file to let Adobe Creative Cloud Desktop App install the plugin.
 
     **Or**
