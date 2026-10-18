@@ -23,6 +23,14 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 2. Install the plugin
 
+**Via Adobe Universal Plugin Installer Agent (UPIA)**
+
+1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+
+2. Make sure Adobe Creative Cloud version 5.7 or later is installed.
+
+3. Install the plugin via UPIA by Adobe's document: [How to Install UXP Plugins Using Command Line Tools](https://blog.developer.adobe.com/en/publish/2022/03/how-to-install-uxp-plugins-using-command-line-tools).
+
 **Manual**
 
 1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
