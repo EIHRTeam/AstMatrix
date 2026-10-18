@@ -178,3 +178,8 @@ sdk/
 # Small, pinned CEP redistributables and their license are source inputs for offline CI.
 !apps/illustrator-cep/vendor/
 !apps/illustrator-cep/vendor/**
+
+# Vim temporary files
+*.swp
+.*.un~
+*.*~
