@@ -50,7 +50,7 @@ const PLANNED_ARTIFACTS = [
     target: 'photoshop-uxp',
     contents: [
       'manifest.json',
-      'icon.png',
+      'icons/',
       'LICENSE',
       'index.html',
       'index.css',
@@ -63,7 +63,7 @@ const PLANNED_ARTIFACTS = [
     target: 'photoshop-uxp-webview',
     contents: [
       'manifest.json',
-      'icon.png',
+      'icons/',
       'LICENSE',
       'index.html',
       'index.css',

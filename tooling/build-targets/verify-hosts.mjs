@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parse } from 'acorn';
 import { createHash } from 'node:crypto';
 import { verifyFigma } from './verify-figma.mjs';
+import { verifyPhotoshopIcons } from './photoshop-icons.ts';
 const destination = process.argv[2] ?? 'tmp/host-bundles.json';
 const roots = [
   'apps/illustrator-cep/dist',
@@ -99,28 +100,7 @@ for (const root of roots) {
       assert.equal(manifest.requiredPermissions.webview.enableMessageBridge, 'localOnly');
       assert.deepEqual(manifest.requiredPermissions.webview.domains, []);
     }
-    const iconGroups = [
-      { size: 24, icons: manifest.icons },
-      {
-        size: 23,
-        icons: manifest.entrypoints.flatMap((entrypoint) => entrypoint.icons ?? []),
-      },
-    ];
-    for (const { size, icons } of iconGroups) {
-      assert(Array.isArray(icons) && icons.length > 0, `Missing Photoshop ${size}px icon`);
-      for (const icon of icons) {
-        assert.equal(icon.width, size);
-        assert.equal(icon.height, size);
-        assert(Array.isArray(icon.scale) && icon.scale.includes(1) && icon.scale.includes(2));
-        assert(Array.isArray(icon.theme) && icon.theme.length > 0);
-        const bytes = await readFile(path.join(root, icon.path));
-        assert.equal(
-          bytes.subarray(0, 8).toString('hex'),
-          '89504e470d0a1a0a',
-          `${root}/${icon.path} must be a PNG`,
-        );
-      }
-    }
+    verifyPhotoshopIcons(root);
     const code = await readFile(path.join(root, 'index.js'), 'utf8');
     parse(code, { ecmaVersion: 2020, sourceType: 'script' });
     const imports = [...code.matchAll(/\brequire\(["']([^"']+)["']\)/g)].map((m) => m[1]);

@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { build } from 'vite';
 import { parse } from 'acorn';
+import { verifyPhotoshopIcons } from './photoshop-icons.ts';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const sha = (value) => createHash('sha256').update(value).digest('hex');
 const invoke = (args, env = {}) => {
@@ -115,10 +116,8 @@ export async function buildPhotoshop() {
   });
   for (const file of ['index.html', 'index.css', 'manifest.json'])
     await cp(path.join(app, file), path.join(native, file));
-  const icon = await readFile(path.join(root, 'icon.png'));
-  if (icon.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a')
-    throw new Error('icon.png must be a PNG image');
-  await writeFile(path.join(native, 'icon.png'), icon);
+  await cp(path.join(app, 'icons'), path.join(native, 'icons'), { recursive: true });
+  verifyPhotoshopIcons(native);
   const code = await readFile(path.join(native, 'index.js'), 'utf8');
   parse(code, { ecmaVersion: 2020, sourceType: 'script' });
   if (!code.includes('require("photoshop")') && !code.includes("require('photoshop')"))
@@ -139,6 +138,7 @@ export async function buildPhotoshop() {
     '<p id="webview-status" style="display: none"></p><webview id="astmatrix-webview" style="display: none"></webview><div id="astmatrix-panel">',
   );
   await writeFile(path.join(enhanced, 'index.html'), html);
+  verifyPhotoshopIcons(enhanced);
   await report(native, 'photoshop-uxp-native');
   await report(enhanced, 'photoshop-uxp-webview');
   console.log(`Photoshop development plugins: ${native}\n${enhanced}`);

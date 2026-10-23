@@ -40,8 +40,8 @@
         {
           "width": 23,
           "height": 23,
-          "path": "icon.png",
-          "scale": [1, 1.25, 1.5, 2],
+          "path": "icons/panel.png",
+          "scale": [1, 2],
           "theme": ["darkest", "dark", "light", "lightest"]
         }
       ]
@@ -51,8 +51,8 @@
     {
       "width": 24,
       "height": 24,
-      "path": "icon.png",
-      "scale": [1, 1.25, 1.5, 2],
+      "path": "icons/list.png",
+      "scale": [1, 2],
       "theme": ["darkest", "dark", "light", "lightest"]
     }
   ],

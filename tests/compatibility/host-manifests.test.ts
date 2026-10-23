@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import { expect, it } from 'vitest';
+import { verifyPhotoshopIcons } from '../../tooling/build-targets/photoshop-icons';
 
 type ManifestIcon = {
   width: number;
@@ -25,7 +26,7 @@ it('keeps native and WebView Photoshop manifests on their own compatibility floo
   const enhanced = JSON.parse(
     readFileSync('apps/photoshop-uxp/manifest-webview.json', 'utf8'),
   ) as UxpManifest;
-  expect(native.id).not.toBe(enhanced.id);
+  expect(native.id).toBe(enhanced.id);
   expect(native.host).toEqual([{ app: 'PS', minVersion: '24.0.0', data: { apiVersion: 2 } }]);
   expect(enhanced.host).toEqual([{ app: 'PS', minVersion: '26.0.0', data: { apiVersion: 2 } }]);
   expect(native.requiredPermissions).toEqual({ localFileSystem: 'request' });
@@ -39,8 +40,8 @@ it('keeps native and WebView Photoshop manifests on their own compatibility floo
       {
         width: 24,
         height: 24,
-        path: 'icon.png',
-        scale: [1, 1.25, 1.5, 2],
+        path: 'icons/list.png',
+        scale: [1, 2],
         theme: ['darkest', 'dark', 'light', 'lightest'],
       },
     ]);
@@ -49,13 +50,14 @@ it('keeps native and WebView Photoshop manifests on their own compatibility floo
       {
         width: 23,
         height: 23,
-        path: 'icon.png',
-        scale: [1, 1.25, 1.5, 2],
+        path: 'icons/panel.png',
+        scale: [1, 2],
         theme: ['darkest', 'dark', 'light', 'lightest'],
       },
     ]);
   }
-  expect(readFileSync('icon.png').subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+  verifyPhotoshopIcons('apps/photoshop-uxp');
+  verifyPhotoshopIcons('apps/photoshop-uxp', 'manifest-webview.json');
 });
 
 it('keeps the Illustrator CEP runtime floor independent of annual aliases', () => {
