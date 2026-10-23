@@ -94,3 +94,5 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 Copyright © 2026 Endfield Industries Human Resource Team.
 
 This project is licensed under the [Apache License, Version 2.0](LICENSE).
+
+Privacy policy: [PRIVACY.md](https://github.com/EIHRTeam/AstMAtrix/blob/main/PRIVACY.md)
