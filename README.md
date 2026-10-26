@@ -19,9 +19,9 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 **Via Adobe Creative Cloud**
 
-1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/206104) for this project
+1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/206104/astmatrix) for this project, or search "**AstMatrix**" in Creative Cloud Desktop app.
 
-2. Install the plugin
+2. Install the plugin.
 
 **Manual**
 
@@ -45,7 +45,8 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 **Via Adobe Creative Cloud**
 
-1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/1f4db629) for this project.
+1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/1f4db629/astmatrix-for-photoshop) for this project, or search "**AstMatrix for Photoshop**" in Creative Cloud Desktop app.
+
 2. Install the plugin.
 
 **Via Adobe Universal Plugin Installer Agent (UPIA)**
