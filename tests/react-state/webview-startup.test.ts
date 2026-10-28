@@ -184,6 +184,71 @@ it('keeps the legacy native-only package functional without a WebView element', 
   expect(root.querySelector('select')).not.toBeNull();
 });
 
+it.each([
+  '',
+  'null',
+  'https://example.com',
+  'plugin:/',
+  'plugin:/other.html',
+  'plugin:/webview/index.html.evil',
+  'plugin:/webview/index.html?untrusted=1',
+  'plugin:/webview/index.html#untrusted',
+  'plugin:/webview/%69ndex.html',
+  'plugin-data:/webview/index.html',
+  'plugin-temp:/webview/index.html',
+  'file:///webview/index.html',
+])('rejects WebView messages from origin %j before handling their payload', async (origin) => {
+  const { postMessage, openExternal } = boot();
+  const session = (postMessage.mock.calls[0]![0] as { session: string }).session;
+  const request = {
+    channel: WEBVIEW_CHANNEL,
+    type: 'openExternal',
+    requestId: 'external-license',
+    session,
+    url: LICENSE_URL,
+  };
+  postMessage.mockClear();
+  window.dispatchEvent(
+    new MessageEvent('message', {
+      origin,
+      data: { channel: WEBVIEW_CHANNEL, type: 'hello' },
+    }),
+  );
+  window.dispatchEvent(new MessageEvent('message', { origin, data: request }));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(openExternal).not.toHaveBeenCalled();
+  expect(postMessage).not.toHaveBeenCalled();
+
+  // A rejected sender must not consume the legitimate client's request ID.
+  window.dispatchEvent(
+    new MessageEvent('message', { origin: 'plugin:/webview/index.html', data: request }),
+  );
+  await vi.advanceTimersByTimeAsync(0);
+  expect(openExternal).toHaveBeenCalledExactlyOnceWith(LICENSE_URL, expect.any(String));
+  expect(postMessage).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ type: 'response', response: expect.objectContaining({ ok: true }) }),
+  );
+});
+
+it('accepts the bundled WebView handshake and stops receiving messages after destruction', () => {
+  const { postMessage } = boot();
+  const hello = () =>
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'plugin:/webview/index.html',
+        data: { channel: WEBVIEW_CHANNEL, type: 'hello' },
+      }),
+    );
+  postMessage.mockClear();
+  hello();
+  expect(postMessage).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'init' }));
+  panel!.destroy();
+  panel = undefined;
+  postMessage.mockClear();
+  hello();
+  expect(postMessage).not.toHaveBeenCalled();
+});
+
 it.each(['', 'Browser launch failed'])(
   'opens the license in the host browser without falling back when the host returns %j',
   async (browserError) => {
@@ -191,6 +256,7 @@ it.each(['', 'Browser launch failed'])(
     const session = (postMessage.mock.calls[0]![0] as { session: string }).session;
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: 'plugin:/webview/index.html',
         data: {
           channel: WEBVIEW_CHANNEL,
           type: 'openExternal',

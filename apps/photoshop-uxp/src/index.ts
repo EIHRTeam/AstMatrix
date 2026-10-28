@@ -105,6 +105,7 @@ const startNative = () => {
       exportSvg,
     });
 };
+const webviewUrl = 'plugin:/webview/index.html';
 const status = document.getElementById('webview-status'),
   webview = document.getElementById('astmatrix-webview') as
     | (HTMLElement & { postMessage: (message: unknown) => void })
@@ -142,7 +143,9 @@ const showWeb = () => {
   }
 };
 const receiveMessage = (event: MessageEvent) => {
-  if (useWeb) void bridge?.receive(event.data);
+  // UXP reports the content URL as origin; only the bundled UI may invoke host operations.
+  if (!useWeb || event.origin !== webviewUrl) return;
+  void bridge?.receive(event.data);
 };
 if (webview) {
   if (unavailableReason) {
@@ -164,7 +167,7 @@ if (webview) {
     webview.addEventListener('loaderror', (event) => {
       if (!useWeb) return;
       const failure = event as Event & { url?: string; code?: number; message?: string };
-      const detail = `${failure.message ?? '未知加载错误'}（${failure.code ?? '无错误码'} / ${failure.url ?? 'plugin:/webview/index.html'}）`;
+      const detail = `${failure.message ?? '未知加载错误'}（${failure.code ?? '无错误码'} / ${failure.url ?? webviewUrl}）`;
       if (status) {
         status.textContent = `WebUI 加载失败：${detail}，已回退原生面板`;
         status.style.display = 'block';
@@ -175,7 +178,7 @@ if (webview) {
     window.addEventListener('message', receiveMessage);
     showWeb();
     // Start navigation only after checking support and registering failure handlers.
-    webview.setAttribute('src', 'plugin:/webview/index.html');
+    webview.setAttribute('src', webviewUrl);
   }
 }
 const start = () => {
