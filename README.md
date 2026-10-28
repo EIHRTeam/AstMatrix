@@ -13,6 +13,15 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 > [!TIP]
 > This project is still in the early stages of development, and no stable release is currently available for production use. Caution is advised when using this project.
 
+## Index
+
+- [Installation](#installation)
+  - [Adobe Illustrator](#adobe-illustrator)
+  - [Adobe Photoshop](#adobe-photoshop)
+  - [Figma](#figma)
+- [Compatibility](#compatibility)
+- [Supported Encoding Formats](#supported-encoding-formats)
+
 ## Installation
 
 ### Adobe Illustrator
@@ -89,6 +98,146 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 ### Partial Support
 
 - Adobe Photoshop 2023~2024 (without web UI)
+
+## Supported Encoding Formats
+
+<table>
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th>Formats and presets</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="9" scope="rowgroup">Retail</th>
+      <td>EAN-8</td>
+    </tr>
+    <tr>
+      <td>EAN-13</td>
+    </tr>
+    <tr>
+      <td>EAN-14 / GS1-128</td>
+    </tr>
+    <tr>
+      <td>EAN-8 Composite</td>
+    </tr>
+    <tr>
+      <td>EAN-13 Composite</td>
+    </tr>
+    <tr>
+      <td>UPC-A</td>
+    </tr>
+    <tr>
+      <td>UPC-E</td>
+    </tr>
+    <tr>
+      <td>UPC-A Composite</td>
+    </tr>
+    <tr>
+      <td>UPC-E Composite</td>
+    </tr>
+    <tr>
+      <th rowspan="12" scope="rowgroup">Industrial</th>
+      <td>Code-128</td>
+    </tr>
+    <tr>
+      <td>Code-11</td>
+    </tr>
+    <tr>
+      <td>Code-2of5 Interleaved</td>
+    </tr>
+    <tr>
+      <td>Code-39</td>
+    </tr>
+    <tr>
+      <td>Code-39 Full ASCII</td>
+    </tr>
+    <tr>
+      <td>Code-93</td>
+    </tr>
+    <tr>
+      <td>Flattermarken</td>
+    </tr>
+    <tr>
+      <td>GS1-128</td>
+    </tr>
+    <tr>
+      <td>MSI</td>
+    </tr>
+    <tr>
+      <td>Pharmacode One-Track</td>
+    </tr>
+    <tr>
+      <td>Pharmacode Two-Track</td>
+    </tr>
+    <tr>
+      <td>Telepen Alpha</td>
+    </tr>
+    <tr>
+      <th rowspan="5" scope="rowgroup">Publication</th>
+      <td>ISBN 13</td>
+    </tr>
+    <tr>
+      <td>ISBN 13 + 5 Digits</td>
+    </tr>
+    <tr>
+      <td>ISMN</td>
+    </tr>
+    <tr>
+      <td>ISSN</td>
+    </tr>
+    <tr>
+      <td>ISSN + 2 Digits</td>
+    </tr>
+    <tr>
+      <th rowspan="15" scope="rowgroup">Matrix and stacked</th>
+      <td>QR Code</td>
+    </tr>
+    <tr>
+      <td>QR Mobile/Smartphone</td>
+    </tr>
+    <tr>
+      <td>Data Matrix</td>
+    </tr>
+    <tr>
+      <td>Aztec</td>
+    </tr>
+    <tr>
+      <td>Codablock-F</td>
+    </tr>
+    <tr>
+      <td>MaxiCode</td>
+    </tr>
+    <tr>
+      <td>MicroPDF417</td>
+    </tr>
+    <tr>
+      <td>PDF417</td>
+    </tr>
+    <tr>
+      <td>Micro QR Code</td>
+    </tr>
+    <tr>
+      <td>Han Xin</td>
+    </tr>
+    <tr>
+      <td>DotCode</td>
+    </tr>
+    <tr>
+      <td>Royal Mail Mailmark 2D</td>
+    </tr>
+    <tr>
+      <td>NTIN Code</td>
+    </tr>
+    <tr>
+      <td>PPN Code</td>
+    </tr>
+    <tr>
+      <td>Code 49</td>
+    </tr>
+  </tbody>
+</table>
 
 ## Legal
 
