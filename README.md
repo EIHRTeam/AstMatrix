@@ -1,5 +1,7 @@
 # AstMatrix
 
+[![CodeQL](https://github.com/EIHRTeam/AstMatrix/actions/workflows/codeql.yml/badge.svg)](https://github.com/EIHRTeam/AstMatrix/actions/workflows/codeql.yml)
+[![CI](https://github.com/EIHRTeam/AstMatrix/actions/workflows/ci.yml/badge.svg)](https://github.com/EIHRTeam/AstMatrix/actions/workflows/ci.yml)<br>
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square&label=License)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/EIHRTeam/AstMatrix?style=flat-square&label=Version&color=blue)](https://github.com/EIHRTeam/AstMatrix/releases/latest)<br>
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-blue.svg?logo=typescript&style=flat-square&logoColor=white)](https://www.typescriptlang.org/)
