@@ -57,7 +57,8 @@ for (const root of roots) {
     await access(path.join(root, file));
   const host = root.includes('illustrator') ? 'Illustrator' : 'Photoshop';
   const guide = `Installation_Guide_${host}.txt`;
-  assert.deepEqual(await readFile(path.join(root, 'README.md')), await readFile('README.md'));
+  for (const file of ['README.md', 'PRIVACY.md'])
+    assert.deepEqual(await readFile(path.join(root, file)), await readFile(file));
   assert.deepEqual(
     await readFile(path.join(root, guide)),
     await readFile(path.join('public', guide)),

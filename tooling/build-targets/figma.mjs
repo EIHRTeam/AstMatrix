@@ -76,6 +76,7 @@ export async function buildFigma() {
   await writeFile(path.join(directory, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   await cp(path.join(root, 'LICENSE'), path.join(directory, 'LICENSE'));
   await cp(path.join(root, 'README.md'), path.join(directory, 'README.md'));
+  await cp(path.join(root, 'PRIVACY.md'), path.join(directory, 'PRIVACY.md'));
   await cp(path.join(directory, 'ui/licenses'), path.join(directory, 'licenses'), {
     recursive: true,
   });

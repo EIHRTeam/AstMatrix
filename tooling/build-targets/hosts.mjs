@@ -32,7 +32,8 @@ async function notices(directory) {
     );
 }
 async function documentation(directory, host) {
-  await cp(path.join(root, 'README.md'), path.join(directory, 'README.md'));
+  for (const file of ['README.md', 'PRIVACY.md'])
+    await cp(path.join(root, file), path.join(directory, file));
   const guide = `Installation_Guide_${host}.txt`;
   await cp(path.join(root, 'public', guide), path.join(directory, guide));
 }

@@ -61,7 +61,8 @@ export async function verifyFigma(directory) {
     'licenses/BWIP-JS-MIT.txt',
   ])
     await access(path.join(directory, file));
-  assert.deepEqual(await readFile(path.join(directory, 'README.md')), await readFile('README.md'));
+  for (const file of ['README.md', 'PRIVACY.md'])
+    assert.deepEqual(await readFile(path.join(directory, file)), await readFile(file));
   for (const host of ['Illustrator', 'Photoshop'])
     assert(!existsSync(path.join(directory, `Installation_Guide_${host}.txt`)));
   assert.equal(
