@@ -31,6 +31,11 @@ async function notices(directory) {
       path.join(directory, `licenses/${font}-NOTICE.txt`),
     );
 }
+async function documentation(directory, host) {
+  await cp(path.join(root, 'README.md'), path.join(directory, 'README.md'));
+  const guide = `Installation_Guide_${host}.txt`;
+  await cp(path.join(root, 'public', guide), path.join(directory, guide));
+}
 async function report(directory, target) {
   const artifacts = [];
   async function visit(folder) {
@@ -89,6 +94,7 @@ export async function buildIllustrator() {
   if (sha(await readFile(path.join(app, 'vendor/CSInterface.js'))) !== source.sha256)
     throw new Error('Vendored CSInterface checksum mismatch');
   await notices(directory);
+  await documentation(directory, 'Illustrator');
   await report(directory, 'illustrator-cep');
   console.log(`Illustrator development extension: ${directory}`);
 }
@@ -103,6 +109,8 @@ export async function buildPhotoshop() {
   await build({
     configFile: false,
     root,
+    // Host documentation is copied explicitly; do not bundle the whole shared public directory.
+    publicDir: false,
     build: {
       target: 'es2020',
       outDir: native,
@@ -116,7 +124,10 @@ export async function buildPhotoshop() {
   });
   for (const file of ['index.html', 'index.css', 'manifest.json'])
     await cp(path.join(app, file), path.join(native, file));
-  await cp(path.join(app, 'icons'), path.join(native, 'icons'), { recursive: true });
+  await cp(path.join(app, 'icons'), path.join(native, 'icons'), {
+    recursive: true,
+    filter: (source) => path.basename(source) !== 'README.md',
+  });
   verifyPhotoshopIcons(native);
   const code = await readFile(path.join(native, 'index.js'), 'utf8');
   parse(code, { ecmaVersion: 2020, sourceType: 'script' });
@@ -126,6 +137,7 @@ export async function buildPhotoshop() {
   if (imports.some((id) => !['photoshop', 'uxp'].includes(id)))
     throw new Error(`Unexpected native imports: ${imports.join(', ')}`);
   await notices(native);
+  await documentation(native, 'Photoshop');
   invoke(['--filter', '@astmatrix/photoshop-uxp', 'build:webview'], {
     ASTMATRIX_WEB_PROFILE: 'uxp-webview',
     ASTMATRIX_COMPILER: 'on',

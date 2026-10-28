@@ -6,6 +6,7 @@
  * visible, but does not assemble archives yet.
  *
  * Planned artefacts
+ *   astmatrix-figma.zip            Figma Design plugin, importable after extraction
  *   astmatrix-illustrator.zxp      CEP, may contain web/cep11 + web/cep12
  *   astmatrix-photoshop.ccx        UXP, manifest v5, host.minVersion >= Photoshop 24.x
  *   astmatrix-affinity/            Affinity script bundle distributed per SDK support
@@ -20,14 +21,16 @@ import process from 'node:process';
 
 const PLANNED_ARTIFACTS = [
   {
-    name: 'astmatrix-figma/',
+    name: 'astmatrix-figma.zip',
     target: 'figma-plugin',
     contents: [
       'manifest.json',
       'code.js',
       'ui.html',
       'LICENSE',
+      'README.md',
       'licenses/',
+      'ui-build-info.json',
       'host-build-info.json',
     ],
   },
@@ -37,6 +40,8 @@ const PLANNED_ARTIFACTS = [
     contents: [
       'CSXS/manifest.xml',
       'LICENSE',
+      'README.md',
+      'Installation_Guide_Illustrator.txt',
       'bootstrap/',
       'web/cep11/',
       'web/cep12/',
@@ -52,6 +57,8 @@ const PLANNED_ARTIFACTS = [
       'manifest.json',
       'icons/',
       'LICENSE',
+      'README.md',
+      'Installation_Guide_Photoshop.txt',
       'index.html',
       'index.css',
       'index.js',
@@ -65,6 +72,8 @@ const PLANNED_ARTIFACTS = [
       'manifest.json',
       'icons/',
       'LICENSE',
+      'README.md',
+      'Installation_Guide_Photoshop.txt',
       'index.html',
       'index.css',
       'index.js',

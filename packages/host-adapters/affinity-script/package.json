@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/host-adapter-affinity-script",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Affinity JavaScript SDK host adapter (native curves and groups)",
   "type": "module",

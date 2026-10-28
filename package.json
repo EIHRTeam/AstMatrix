@@ -1,6 +1,6 @@
 {
   "name": "astmatrix",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "AstMatrix — offline-first cross-platform barcode and QR code plugin for Illustrator, Photoshop, Figma and Affinity",
   "license": "Apache-2.0",

@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/host-adapter-illustrator-cep",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Illustrator CEP host adapter (CSInterface <-> ExtendScript bridge)",
   "type": "module",

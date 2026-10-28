@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AstMatrixApplicationService } from '@astmatrix/application';
 import { FakeHostAdapter } from '@astmatrix/host-contract';
-import { LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
+import { ISSUES_URL, LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
 import { AstMatrixProviders } from '@astmatrix/ui-react';
 import { HeaderActions } from '../../packages/ui-react/src/header-actions';
 import { createCepLinkOpener } from '../../apps/illustrator-cep/panel/external-links';
@@ -54,7 +54,7 @@ async function click(link: HTMLAnchorElement) {
   return event.defaultPrevented;
 }
 
-it('routes both GitHub links and the license link through the same CEP browser API', async () => {
+it('routes both GitHub links, feedback and the license link through the same CEP browser API', async () => {
   const open = vi.fn<(url: string) => number>(() => 0);
   await renderLinks(createCepLinkOpener({ openURLInDefaultBrowser: open }));
   expect(await click(document.querySelector<HTMLAnchorElement>(`a[href="${PROJECT_URL}"]`)!)).toBe(
@@ -70,26 +70,34 @@ it('routes both GitHub links and the license link through the same CEP browser A
   expect(license.href).toBe(LICENSE_URL);
   expect(license.textContent).toBe('Apache License, Version 2.0');
   expect(await click(license)).toBe(true);
-  expect(open.mock.calls).toEqual([[PROJECT_URL], [PROJECT_URL], [LICENSE_URL]]);
+  const feedback = document.querySelector<HTMLAnchorElement>(
+    `.about-links a[href="${ISSUES_URL}"]`,
+  )!;
+  expect(feedback.textContent).toBe('反馈问题');
+  expect(await click(feedback)).toBe(true);
+  expect(open.mock.calls).toEqual([[PROJECT_URL], [PROJECT_URL], [LICENSE_URL], [ISSUES_URL]]);
 });
 
-it.each(['zh_CN', 'en_US'])(
-  'shows license open failures inside the dialog in %s',
-  async (locale) => {
+it.each([
+  ['zh_CN', LICENSE_URL, '无法打开许可证链接'],
+  ['en_US', LICENSE_URL, 'Unable to open the license link'],
+  ['zh_CN', ISSUES_URL, '无法打开反馈链接'],
+  ['en_US', ISSUES_URL, 'Unable to open the feedback link'],
+])(
+  'shows external link open failures inside the dialog in %s for %s',
+  async (locale, url, message) => {
     const open = vi
       .fn<(url: string) => Promise<void>>()
       .mockRejectedValueOnce(new Error('Native failure'))
       .mockResolvedValue(undefined);
     await renderLinks(open, undefined, locale);
     await openAbout();
-    await click(document.querySelector<HTMLAnchorElement>('.license-link')!);
+    await click(document.querySelector<HTMLAnchorElement>(`.about-dialog a[href="${url}"]`)!);
     const error = document.querySelector('.about-dialog [role="alert"]')!;
-    expect(error.textContent).toContain(LICENSE_URL);
-    expect(error.textContent).toContain(
-      locale === 'zh_CN' ? '无法打开许可证链接' : 'Unable to open the license link',
-    );
+    expect(error.textContent).toContain(url);
+    expect(error.textContent).toContain(message);
     expect(document.querySelector('.header-error')).toBeNull();
-    await click(document.querySelector<HTMLAnchorElement>('.license-link')!);
+    await click(document.querySelector<HTMLAnchorElement>(`.about-dialog a[href="${url}"]`)!);
     expect(document.querySelector('.about-dialog [role="alert"]')).toBeNull();
   },
 );

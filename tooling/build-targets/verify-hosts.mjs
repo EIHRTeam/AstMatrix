@@ -3,6 +3,7 @@ import { readFile, access, readdir, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { parse } from 'acorn';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { verifyFigma } from './verify-figma.mjs';
 import { verifyPhotoshopIcons } from './photoshop-icons.ts';
 const destination = process.argv[2] ?? 'tmp/host-bundles.json';
@@ -54,6 +55,15 @@ for (const root of roots) {
     'licenses/BWIP-JS-MIT.txt',
   ])
     await access(path.join(root, file));
+  const host = root.includes('illustrator') ? 'Illustrator' : 'Photoshop';
+  const guide = `Installation_Guide_${host}.txt`;
+  assert.deepEqual(await readFile(path.join(root, 'README.md')), await readFile('README.md'));
+  assert.deepEqual(
+    await readFile(path.join(root, guide)),
+    await readFile(path.join('public', guide)),
+  );
+  const otherHost = host === 'Illustrator' ? 'Photoshop' : 'Illustrator';
+  assert(!existsSync(path.join(root, `Installation_Guide_${otherHost}.txt`)));
   if (root.includes('illustrator')) {
     const manifest = await readFile(path.join(root, 'CSXS/manifest.xml'), 'utf8');
     assert(manifest.includes('./bootstrap/index.html'));
@@ -101,6 +111,7 @@ for (const root of roots) {
       assert.deepEqual(manifest.requiredPermissions.webview.domains, []);
     }
     verifyPhotoshopIcons(root);
+    assert(!existsSync(path.join(root, 'icons/README.md')));
     const code = await readFile(path.join(root, 'index.js'), 'utf8');
     parse(code, { ecmaVersion: 2020, sourceType: 'script' });
     const imports = [...code.matchAll(/\brequire\(["']([^"']+)["']\)/g)].map((m) => m[1]);
@@ -115,7 +126,7 @@ for (const root of roots) {
     target: info.target,
     artifacts: info.artifacts.length,
     checks:
-      'local resources, host externals, manifest separation, ES3/ES2020 syntax and artifact hashes pass',
+      'local resources, host documentation, host externals, manifest separation, ES3/ES2020 syntax and artifact hashes pass',
     actualHost: 'not-run',
   });
 }

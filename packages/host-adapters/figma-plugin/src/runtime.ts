@@ -1,6 +1,12 @@
 import { HostError, validateEnvelope } from '@astmatrix/host-contract';
 import type { HostEnvelope, HostResponse, HostSnapshot } from '@astmatrix/host-contract';
-import { errorMessage, LICENSE_URL, PROJECT_URL, stableStringify } from '@astmatrix/shared';
+import {
+  errorMessage,
+  ISSUES_URL,
+  LICENSE_URL,
+  PROJECT_URL,
+  stableStringify,
+} from '@astmatrix/shared';
 import type { VectorScene } from '@astmatrix/vector-ir';
 import {
   FIGMA_BRIDGE_VERSION,
@@ -161,7 +167,7 @@ export class FigmaPluginRuntime {
         return;
       }
       if (value.type === 'openExternal') {
-        if (value.url !== PROJECT_URL && value.url !== LICENSE_URL)
+        if (value.url !== PROJECT_URL && value.url !== LICENSE_URL && value.url !== ISSUES_URL)
           throw new HostError('INVALID_INPUT', '不支持的外部链接');
         this.api.openExternal(value.url);
         this.reply({ requestId: id, ok: true, result: null });

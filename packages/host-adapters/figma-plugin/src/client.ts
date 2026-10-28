@@ -6,7 +6,13 @@ import {
   validateSnapshot,
 } from '@astmatrix/host-contract';
 import type { HostEnvelope, HostSnapshot, HostTransport } from '@astmatrix/host-contract';
-import { errorMessage, LICENSE_URL, PROJECT_URL, stableStringify } from '@astmatrix/shared';
+import {
+  errorMessage,
+  ISSUES_URL,
+  LICENSE_URL,
+  PROJECT_URL,
+  stableStringify,
+} from '@astmatrix/shared';
 import {
   FIGMA_BRIDGE_VERSION,
   FIGMA_CHANNEL,
@@ -210,7 +216,7 @@ export class FigmaTransport implements HostTransport {
     return this.send(envelope.requestId, { envelope }, isCurrent, subscribeCurrent);
   }
   async openExternal(url: string): Promise<void> {
-    if (url !== PROJECT_URL && url !== LICENSE_URL)
+    if (url !== PROJECT_URL && url !== LICENSE_URL && url !== ISSUES_URL)
       throw new HostError('INVALID_INPUT', '不支持的外部链接');
     const id = `external-${++this.sequence}`;
     const response = validateResponse(await this.send(id, { type: 'openExternal', url }), id);

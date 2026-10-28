@@ -3,6 +3,7 @@ import { readFile, access } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { parse } from 'acorn';
 
 export async function verifyFigma(directory) {
@@ -60,6 +61,9 @@ export async function verifyFigma(directory) {
     'licenses/BWIP-JS-MIT.txt',
   ])
     await access(path.join(directory, file));
+  assert.deepEqual(await readFile(path.join(directory, 'README.md')), await readFile('README.md'));
+  for (const host of ['Illustrator', 'Photoshop'])
+    assert(!existsSync(path.join(directory, `Installation_Guide_${host}.txt`)));
   assert.equal(
     JSON.parse(await readFile(path.join(directory, 'ui-build-info.json'), 'utf8')).webProfile,
     'figma-ui',

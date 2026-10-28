@@ -2,7 +2,7 @@ import { createContext, useContext, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import * as Dialog from 'radix-ui/dialog';
 import * as Popover from 'radix-ui/popover';
-import { LICENSE_URL, PROJECT_URL, PROJECT_VERSION } from '@astmatrix/shared';
+import { ISSUES_URL, LICENSE_URL, PROJECT_URL, PROJECT_VERSION } from '@astmatrix/shared';
 import { useLocale } from './l10n';
 import type { LanguagePreference } from './l10n';
 
@@ -26,6 +26,21 @@ function AboutIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 10v7M12 7v1" />
+    </svg>
+  );
+}
+function IssueIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v6m0 3v1" />
+    </svg>
+  );
+}
+function ExternalArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M6 18 18 6M6 6h12v12" />
     </svg>
   );
 }
@@ -213,19 +228,34 @@ export function HeaderActions() {
               </ExternalLink>
               .
             </p>
-            {linkError === LICENSE_URL ? (
+            {linkError === LICENSE_URL || linkError === ISSUES_URL ? (
               <div className="error" role="alert">
-                {t('无法打开许可证链接，请在浏览器中访问：')} {LICENSE_URL}
+                {t(
+                  linkError === LICENSE_URL
+                    ? '无法打开许可证链接，请在浏览器中访问：'
+                    : '无法打开反馈链接，请在浏览器中访问：',
+                )}{' '}
+                {linkError}
               </div>
             ) : null}
-            <ExternalLink
-              href={PROJECT_URL}
-              label={t('打开 GitHub 仓库')}
-              title="GitHub"
-              onError={setLinkError}
-            >
-              GitHub
-            </ExternalLink>
+            <div className="about-links">
+              <ExternalLink
+                className="about-link"
+                href={PROJECT_URL}
+                label={t('打开 GitHub 仓库')}
+                title="GitHub"
+                onError={setLinkError}
+              >
+                <img src={githubIcon} className="github-icon" alt="" />
+                <span>GitHub</span>
+                <ExternalArrowIcon />
+              </ExternalLink>
+              <ExternalLink className="about-link" href={ISSUES_URL} onError={setLinkError}>
+                <IssueIcon />
+                <span>{t('反馈问题')}</span>
+                <ExternalArrowIcon />
+              </ExternalLink>
+            </div>
             <Dialog.Close className="about-close">{t('关闭')}</Dialog.Close>
           </Dialog.Content>
         </Dialog.Portal>

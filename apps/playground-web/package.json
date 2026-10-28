@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/playground-web",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Browser playground for UI, encoder and SVG development",
   "type": "module",

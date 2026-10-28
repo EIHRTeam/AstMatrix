@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
+import { ISSUES_URL, LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
 import { WebviewHostBridge } from '../../apps/photoshop-uxp/src/webview-host';
 import { WEBVIEW_CHANNEL, WebviewTransport } from '../../apps/photoshop-uxp/src/webview-client';
 import type { WebviewClientWindow } from '../../apps/photoshop-uxp/src/webview-client';
@@ -276,7 +276,7 @@ it('accepts locale updates only from the actual UXP host message source', () => 
   }
 });
 
-it.each([PROJECT_URL, LICENSE_URL])(
+it.each([PROJECT_URL, LICENSE_URL, ISSUES_URL])(
   'opens %s through the authenticated WebView transport and reports host failures',
   async (url) => {
     let receive: Parameters<WebviewClientWindow['addEventListener']>[1] = () => {};

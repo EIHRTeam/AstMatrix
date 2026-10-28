@@ -1,15 +1,20 @@
-	AstMatrix for Photoshop Manual Installation Guide
+	AstMatrix for Photoshop Installation Guide
+
+	For sections B, C, and D, download the latest Photoshop .ccx
+	package from:
+	https://github.com/EIHRTeam/AstMatrix/releases/latest
 
 A. Install via Adobe Creative Cloud
 
 	1. Make sure Adobe Creative Cloud is installed and that you are
 	   signed in with your Adobe account.
 
-	2. Double-click the downloaded .ccx file, or open the .ccx
-	   file using the Adobe Creative Cloud desktop app.
+	2. Open the Adobe Exchange page:
+	   https://exchange.adobe.com/apps/cc/1f4db629/astmatrix-for-photoshop
+	   Or search "AstMatrix for Photoshop" in the Creative Cloud
+	   desktop app.
 
-	3. Click the "Install" button in the "Install a
-	   non-marketplace plugin" pop-up window.
+	3. Install the plugin.
 
 	4. Open Photoshop (or restart it completely if it is already
 	   running), then select "Plugins" > "AstMatrix" to
@@ -17,12 +22,32 @@ A. Install via Adobe Creative Cloud
 
 
 
-B. Install via Adobe Universal Plugin Installer Agent (UPIA)
+B. Install via Adobe Creative Cloud (.ccx File)
+
+	1. Make sure Adobe Creative Cloud is installed and that you are
+	   signed in with your Adobe account.
+
+	2. Double-click the downloaded .ccx file, or open the .ccx
+	   file using the Adobe Creative Cloud desktop app.
+
+	3. Confirm the non-marketplace plugin installation prompt by
+	   clicking "Install" (or "Install locally", depending on your
+	   Creative Cloud version).
+
+	4. Open Photoshop (or restart it completely if it is already
+	   running), then select "Plugins" > "AstMatrix" to
+	   launch the plugin.
+
+
+
+C. Install via Adobe Universal Plugin Installer Agent (UPIA)
 
 	1. Make sure Adobe Creative Cloud version 5.7 or later is
 	   installed.
 
-	2. Install the plugin via UPIA:
+	2. Run the command for your operating system. Replace the example
+	   .ccx path with the path to your downloaded file, keeping the
+	   quotation marks:
 
 		2.1.1 On Windows, press the Windows logo key + R to open
 		      the Run dialog, type "cmd", and click "OK".
@@ -31,10 +56,14 @@ B. Install via Adobe Universal Plugin Installer Agent (UPIA)
 		      then search for and open "Terminal.app".
 
 		2.2.1 On Windows, run the following command in CMD:
-			"C:\Program Files\Common Files\Adobe\Adobe Desktop Common\RemoteComponents\UPI\UnifiedPluginInstallerAgent\UnifiedPluginInstallerAgent.exe" /install <Path To The .ccx File>
+			"C:\Program Files\Common Files\Adobe\Adobe Desktop Common\RemoteComponents\UPI\UnifiedPluginInstallerAgent\UnifiedPluginInstallerAgent.exe" /install "C:\path\to\AstMatrix.ccx"
 
 		2.2.2 On macOS, run the following command in Terminal:
-			"/Library/Application Support/Adobe/Adobe Desktop Common/RemoteComponents/UPI/UnifiedPluginInstallerAgent/UnifiedPluginInstallerAgent.app/Contents/MacOS/UnifiedPluginInstallerAgent" --install <Path To The .ccx File>
+			"/Library/Application Support/Adobe/Adobe Desktop Common/RemoteComponents/UPI/UnifiedPluginInstallerAgent/UnifiedPluginInstallerAgent.app/Contents/MacOS/UnifiedPluginInstallerAgent" --install "/path/to/AstMatrix.ccx"
+
+	   See Adobe's "How to Install UXP Plugins Using Command
+	   Line Tools":
+	   https://blog.developer.adobe.com/en/publish/2022/03/how-to-install-uxp-plugins-using-command-line-tools
 
 	3. Open Photoshop (or restart it completely if it is already
 	   running), then select "Plugins" > "AstMatrix" to
@@ -42,17 +71,17 @@ B. Install via Adobe Universal Plugin Installer Agent (UPIA)
 
 
 
-C. Install Manually
+D. Manual Extraction
 
 	1. Open the .ccx file using a ZIP archive utility (e.g.,
 	   7-Zip, ShichiZip, or Keka).
 
 	2. Extract its contents to the following directory for your
 	   operating system:
-	   Windows: %APPDATA%\Roaming\Adobe\UXP\Plugins\External\
+	   Windows: %APPDATA%\Adobe\UXP\Plugins\External\
 	   macOS: ~/Library/Application Support/Adobe/UXP/Plugins/
 
-	3. Open Photoshop (or close and reopen it if it is already
+	3. Open Photoshop (or restart it completely if it is already
 	   running), then select "Plugins" > "AstMatrix" to
 	   launch the plugin.
 

@@ -1,4 +1,4 @@
-# AstMatrix 0.1.1 — Figma Community submission
+# AstMatrix 0.1.2 — Figma Community submission
 
 Plugin ID: `1693350407249302347` · Name: **AstMatrix** · Category: **Design tools**
 

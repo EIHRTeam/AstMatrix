@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { AstMatrixApplicationService } from '@astmatrix/application';
 import { FigmaPluginAdapter, FigmaTransport } from '@astmatrix/host-adapter-figma-plugin';
 import { FigmaPluginRuntime } from '@astmatrix/host-adapter-figma-plugin/runtime';
-import { LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
+import { ISSUES_URL, LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
 import { FigmaPanel } from '../../apps/figma-plugin/ui/panel';
 import { fakeFigma } from '../fixtures/figma';
 
@@ -83,7 +83,7 @@ it.each(['null', 'other'] as const)(
 );
 
 it.each(['null', 'other'] as const)(
-  'opens GitHub and Apache links when native-host event.source is %s',
+  'opens GitHub, feedback and Apache links when native-host event.source is %s',
   async (sourceKind) => {
     const host = mountFigmaPanel(sourceKind);
     // A click during startup should wait for the handshake, then reach figma.openExternal.
@@ -92,7 +92,9 @@ it.each(['null', 'other'] as const)(
     fireEvent.click(screen.getByRole('button', { name: '关于' }));
     fireEvent.click(screen.getByRole('link', { name: 'Apache License, Version 2.0' }));
     await waitFor(() => expect(host.mock.openExternal).toHaveBeenCalledWith(LICENSE_URL));
-    expect(host.mock.openExternal).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole('link', { name: '反馈问题' }));
+    await waitFor(() => expect(host.mock.openExternal).toHaveBeenCalledWith(ISSUES_URL));
+    expect(host.mock.openExternal).toHaveBeenCalledTimes(3);
     expect(document.querySelector('[role="alert"]')).toBeNull();
   },
 );

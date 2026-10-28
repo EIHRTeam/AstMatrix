@@ -8,6 +8,9 @@ const english: Record<string, string> = {
   轻量而强大的多编码格式条形码与二维码生成器:
     'A lightweight yet powerful muti-formats QR Code & Barcode generator',
   '打开 GitHub 仓库': 'Open GitHub repository',
+  反馈问题: 'Report an issue',
+  '无法打开反馈链接，请在浏览器中访问：':
+    'Unable to open the feedback link. Visit this address in your browser:',
   '无法打开 GitHub，请在浏览器中访问：':
     'Unable to open GitHub. Visit this address in your browser:',
   '无法打开许可证链接，请在浏览器中访问：':

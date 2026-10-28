@@ -2,7 +2,7 @@
   "manifestVersion": 5,
   "id": "1f4db629",
   "name": "AstMatrix",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "main": "index.html",
   "host": [
     {

@@ -15,11 +15,11 @@
 <ExtensionManifest
   Version="7.0"
   ExtensionBundleId="com.u202f.astmatrix.illustrator"
-  ExtensionBundleVersion="0.1.1"
+  ExtensionBundleVersion="0.1.2"
   ExtensionBundleName="AstMatrix"
 >
   <ExtensionList>
-    <Extension Id="com.astmatrix.illustrator.panel" Version="0.1.1" />
+    <Extension Id="com.astmatrix.illustrator.panel" Version="0.1.2" />
   </ExtensionList>
 
   <ExecutionEnvironment>

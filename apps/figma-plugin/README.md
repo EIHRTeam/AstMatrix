@@ -6,6 +6,13 @@ Human-readable text is outlined. The frame includes the full quiet zone and stor
 metadata, but this version does not read selected parameters or update existing objects.
 FigJam is not supported. Community publishing instructions are in [RELEASE.md](RELEASE.md).
 
+## Install a release ZIP
+
+Download `AstMatrix-Figma-<version>.zip` from the GitHub Releases page and extract it completely.
+In Figma Desktop, select **Plugins → Development → Import plugin from manifest** and choose
+the extracted `manifest.json`. Open a Figma Design file and run **AstMatrix** from Development.
+Keep `LICENSE`, `licenses/` and the other extracted files with the plugin.
+
 ## Build and load
 
 Use Node.js 24 and pnpm 12.11.2 from the workspace root:

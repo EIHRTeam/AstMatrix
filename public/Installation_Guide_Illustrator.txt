@@ -1,26 +1,49 @@
-	AstMatrix for Illustrator Manual Installation Guide
+	AstMatrix for Illustrator Installation Guide
 
-A. Install Manually
+A. Install via Adobe Creative Cloud
 
-	1. Make sure Adobe Illustrator is installed and completely closed.
+	1. Make sure Adobe Creative Cloud is installed and that you are
+	   signed in with your Adobe account.
 
-	2. Extract the downloaded .zip file using any ZIP archive
-	   utility (e.g., 7-Zip on Windows or Keka on macOS).
+	2. Open the Adobe Exchange page:
+	   https://exchange.adobe.com/apps/cc/206104/astmatrix
+	   Or search "AstMatrix" in the Creative Cloud desktop app.
 
-	3. Copy the extracted plugin folder to the following directory:
+	3. Install the plugin, then follow section D to launch it.
+
+
+
+B. Install Manually
+
+	1. Download the latest Illustrator .zip package from:
+	   https://github.com/EIHRTeam/AstMatrix/releases/latest
+
+	2. Make sure Adobe Illustrator is installed and completely closed.
+
+	3. Open the downloaded .zip file using a ZIP archive
+	   utility (e.g., 7-Zip, ShichiZip, or Keka).
+	   Its contents start with "CSXS/manifest.xml", without an
+	   enclosing "AstMatrix" folder.
+
+	4. Create an "AstMatrix" folder in the following directory,
+	   then extract all archive contents into it:
 	   Windows: %APPDATA%\Adobe\CEP\extensions\
 	   macOS: ~/Library/Application Support/Adobe/CEP/extensions/
 
 	   Create the "extensions" folder if it does not already exist.
 
-	4. Make sure the plugin folder contains "CSXS/manifest.xml"
-	   directly, without an extra nested folder.
+	5. Make sure the final manifest path is
+	   "extensions/AstMatrix/CSXS/manifest.xml", without an extra
+	   nested folder.
+
+	6. Follow section C to enable unsigned CEP extensions, then
+	   follow section D to launch the plugin.
 
 
 
-B. Enable Unsigned CEP Extensions
+C. Enable Unsigned CEP Extensions (Manual Installation Only)
 
-	1. Because the plugin is not digitally signed, enable CEP
+	1. Because the manually installed plugin is unsigned, enable CEP
 	   debug mode to allow Illustrator to load it.
 
 	2. Set "PlayerDebugMode" for the CEP version used by Illustrator:
@@ -49,7 +72,7 @@ B. Enable Unsigned CEP Extensions
 
 
 
-C. Launch the Plugin
+D. Launch the Plugin
 
 	1. Open Illustrator (or restart it completely if it is already
 	   running), then select "Window" > "Extensions" > "AstMatrix"

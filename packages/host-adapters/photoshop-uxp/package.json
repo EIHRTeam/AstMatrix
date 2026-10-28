@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/host-adapter-photoshop-uxp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Photoshop UXP host adapter (editable Shape Layers via batchPlay)",
   "type": "module",

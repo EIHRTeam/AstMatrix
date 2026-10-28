@@ -97,7 +97,6 @@ jobs:
         run: |
           pnpm build:illustrator
           pnpm build:photoshop
-          # Figma ships through Figma Community; build it so the aggregate host check covers it.
           pnpm build:figma
           pnpm check:host-bundles
 
@@ -107,17 +106,20 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf release
-          mkdir -p release/AstMatrix
+          mkdir -p release
 
-          # CEP extensions are installed as a named folder under the host extensions directory.
-          cp -R apps/illustrator-cep/dist/. release/AstMatrix/
-          (cd release && zip -qr "AstMatrix-Illustrator-${VERSION}.zip" AstMatrix)
-          rm -rf release/AstMatrix
+          # CEP package contents start at CSXS/manifest.xml, without a wrapper directory.
+          (cd apps/illustrator-cep/dist && \
+            zip -qr "${GITHUB_WORKSPACE}/release/AstMatrix-Illustrator-${VERSION}.zip" .)
 
           # UXP .ccx archives are zip files with manifest.json at the archive root.
           # Publish only the enhanced (WebView) Photoshop package.
           (cd apps/photoshop-uxp/dist/enhanced && \
             zip -qr "${GITHUB_WORKSPACE}/release/AstMatrix-Photoshop-${VERSION}.ccx" .)
+
+          # Figma Desktop imports the extracted manifest.json from the archive root.
+          (cd apps/figma-plugin/dist && \
+            zip -qr "${GITHUB_WORKSPACE}/release/AstMatrix-Figma-${VERSION}.zip" .)
 
           ls -lh release
 

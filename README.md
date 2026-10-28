@@ -27,64 +27,102 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 **Via Adobe Creative Cloud**
 
-1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/206104/astmatrix) for this project, or search "**AstMatrix**" in Creative Cloud Desktop app.
-
-2. Install the plugin.
+1. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
+2. Open the [Adobe Exchange page](https://exchange.adobe.com/apps/cc/206104/astmatrix), or search "**AstMatrix**" in the Creative Cloud desktop app.
+3. Install the plugin.
+4. Open Illustrator (or restart it completely if it is already running), then select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
 
 **Manual**
 
-1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+1. Download the latest Illustrator `.zip` package from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+2. Make sure Adobe Illustrator is installed and completely closed.
+3. Open the downloaded `.zip` file using a ZIP archive utility (e.g., 7-Zip, ShichiZip, or Keka). Its contents start with `CSXS/manifest.xml`, without an enclosing `AstMatrix` folder.
+4. Create an `AstMatrix` folder in the following directory, then extract all archive contents into it:
 
-2. Open the downloaded zip file with any zip archive software (e.g., 7-Zip, ShichiZip, Keka), extract the contents to the following directory:
+   - Windows: `%APPDATA%\Adobe\CEP\extensions\`
+   - macOS: `~/Library/Application Support/Adobe/CEP/extensions/`
 
-    - Windows: `%APPDATA%\Roaming\Adobe\CEP\extensions\`
-    - macOS: `~/Library/Application Support/Adobe/CEP/extensions/`
+   Create the `extensions` folder if it does not already exist. The final manifest path must be `extensions/AstMatrix/CSXS/manifest.xml`, without an extra nested folder.
 
-3. Enable PlayerDebugMode:
+5. Because the manually installed plugin is unsigned, enable CEP debug mode by setting `PlayerDebugMode` for the CEP version used by Illustrator:
 
-    - Windows: Open Registry Editor, navigate to `HKEY_CURRENT_USER\Software\Adobe\CSXS.12`, create a new string value named `PlayerDebugMode` and set its value to `1`.
-    - macOS: Open Terminal, run the command `defaults write com.adobe.CSXS.12 PlayerDebugMode 1`.
+   - Windows: Press Windows + R, enter `regedit`, and open Registry Editor. Navigate to `HKEY_CURRENT_USER\Software\Adobe\CSXS.12` (create the key if necessary), create a String Value (`REG_SZ`) named `PlayerDebugMode`, and set its value to `1`.
+   - macOS: Open Terminal via Spotlight (Command + Space), then run:
 
-4. Fully restart Adobe Illustrator to load the plugin.
+     ```sh
+     defaults write com.adobe.CSXS.12 PlayerDebugMode 1
+     ```
 
-5. Select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
+   These examples use CEP 12. If your Illustrator version uses a different CEP version, replace `12` with the corresponding version number (e.g., `11` for CEP 11). Enable this setting only for plugins from sources you trust.
+
+6. Open Illustrator (or restart it completely if it is already running), then select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
 
 ### Adobe Photoshop
 
 **Via Adobe Creative Cloud**
 
-1. Open [Adobe Exchange page](https://exchange.adobe.com/apps/cc/1f4db629/astmatrix-for-photoshop) for this project, or search "**AstMatrix for Photoshop**" in Creative Cloud Desktop app.
+1. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
+2. Open the [Adobe Exchange page](https://exchange.adobe.com/apps/cc/1f4db629/astmatrix-for-photoshop), or search "**AstMatrix for Photoshop**" in the Creative Cloud desktop app.
+3. Install the plugin.
+4. Open Photoshop (or restart it completely if it is already running), then select "Plugins" > "AstMatrix" to launch the plugin.
 
-2. Install the plugin.
+**Via Adobe Creative Cloud (.ccx file)**
+
+1. Download the latest Photoshop `.ccx` package from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+2. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
+3. Double-click the downloaded `.ccx` file, or open it using the Adobe Creative Cloud desktop app.
+4. Confirm the non-marketplace plugin installation prompt by clicking "Install" (or "Install locally", depending on your Creative Cloud version).
+5. Open Photoshop (or restart it completely if it is already running), then select "Plugins" > "AstMatrix" to launch the plugin.
 
 **Via Adobe Universal Plugin Installer Agent (UPIA)**
 
-1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
-
+1. Download the latest Photoshop `.ccx` package from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
 2. Make sure Adobe Creative Cloud version 5.7 or later is installed.
+3. Run the command for your operating system. Replace the example `.ccx` path with the path to your downloaded file, keeping the quotation marks:
 
-3. Install the plugin via UPIA by Adobe's document: [How to Install UXP Plugins Using Command Line Tools](https://blog.developer.adobe.com/en/publish/2022/03/how-to-install-uxp-plugins-using-command-line-tools).
+   - Windows: Press Windows + R, enter `cmd`, and run in CMD:
 
-**Manual**
+     ```bat
+     "C:\Program Files\Common Files\Adobe\Adobe Desktop Common\RemoteComponents\UPI\UnifiedPluginInstallerAgent\UnifiedPluginInstallerAgent.exe" /install "C:\path\to\AstMatrix.ccx"
+     ```
 
-1. Download latest release of the plugin from [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+   - macOS: Open Terminal via Spotlight (Command + Space), then run:
 
-2. Doble-click the downloaded `.ccx` file to let Adobe Creative Cloud Desktop App install the plugin.
+     ```sh
+     "/Library/Application Support/Adobe/Adobe Desktop Common/RemoteComponents/UPI/UnifiedPluginInstallerAgent/UnifiedPluginInstallerAgent.app/Contents/MacOS/UnifiedPluginInstallerAgent" --install "/path/to/AstMatrix.ccx"
+     ```
 
-    **Or**
+   See Adobe's [How to Install UXP Plugins Using Command Line Tools](https://blog.developer.adobe.com/en/publish/2022/03/how-to-install-uxp-plugins-using-command-line-tools) for details.
 
-    Open the `.ccx` file with zip archive software (e.g., 7-Zip, ShichiZip, Keka), extract the contents to the following directory:
+4. Open Photoshop (or restart it completely if it is already running), then select "Plugins" > "AstMatrix" to launch the plugin.
 
-    - Windows: `%APPDATA%\Roaming\Adobe\UXP\Plugins\External\`
-    - macOS: `~/Library/Application Support/Adobe/UXP/Plugins/`
+**Manual extraction**
+
+1. Download the latest Photoshop `.ccx` package from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+2. Open the `.ccx` file using a ZIP archive utility (e.g., 7-Zip, ShichiZip, or Keka).
+3. Extract its contents to the following directory:
+
+   - Windows: `%APPDATA%\Adobe\UXP\Plugins\External\`
+   - macOS: `~/Library/Application Support/Adobe/UXP/Plugins/`
+
+4. Open Photoshop (or restart it completely if it is already running), then select "Plugins" > "AstMatrix" to launch the plugin.
 
 ### Figma
+
+**Via Figma Community**
 
 1. Open [the Figma Community page of this project](https://www.figma.com/community/plugin/1693350407249302347).
 
 2. Click the "Save" button to save the plugin to your Figma account.
 
 3. Open a Figma file, go to the menu bar, and select "Plugins" > "Saved plugins" > "AstMatrix" to launch the plugin.
+
+**From GitHub Releases (Figma Desktop)**
+
+1. Download `AstMatrix-Figma-<version>.zip` from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+2. Extract the entire archive and keep its files together.
+3. In Figma Desktop, select "Plugins" > "Development" > "Import plugin from manifest" and choose the extracted `manifest.json`.
+4. Open a Figma Design file, then select "Plugins" > "Development" > "AstMatrix" to launch the plugin.
 
 ## Compatibility
 

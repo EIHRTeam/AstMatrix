@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/vector-ir",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "VectorScene intermediate representation, geometry and physical sizing",
   "type": "module",
