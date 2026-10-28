@@ -12,9 +12,6 @@ _"Let me be the guiding star for all"_
 
 A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Illustrator, Adobe Photoshop and Figma.
 
-> [!TIP]
-> This project is still in the early stages of development, and no stable release is currently available for production use. Caution is advised when using this project.
-
 ## Index
 
 - [Installation](#installation)
