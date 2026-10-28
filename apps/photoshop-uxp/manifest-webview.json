@@ -4,15 +4,13 @@
   "name": "AstMatrix",
   "version": "0.1.2",
   "main": "index.html",
-  "host": [
-    {
-      "app": "PS",
-      "minVersion": "26.0.0",
-      "data": {
-        "apiVersion": 2
-      }
+  "host": {
+    "app": "PS",
+    "minVersion": "26.0.0",
+    "data": {
+      "apiVersion": 2
     }
-  ],
+  },
   "entrypoints": [
     {
       "type": "panel",

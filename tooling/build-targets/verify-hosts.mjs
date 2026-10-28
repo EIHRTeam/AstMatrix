@@ -101,13 +101,18 @@ for (const root of roots) {
   } else {
     const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
     assert.equal(manifest.manifestVersion, 5);
-    assert.equal(manifest.host[0].data.apiVersion, 2);
+    assert(
+      manifest.host && !Array.isArray(manifest.host),
+      'Photoshop release manifests require a single host object; arrays are development-only',
+    );
+    assert.equal(manifest.host.app, 'PS');
+    assert.equal(manifest.host.data.apiVersion, 2);
     assert.equal(manifest.requiredPermissions.localFileSystem, 'request');
     if (root.endsWith('/native')) {
-      assert.equal(manifest.host[0].minVersion, '24.0.0');
+      assert.equal(manifest.host.minVersion, '24.0.0');
       assert(!manifest.requiredPermissions.webview);
     } else {
-      assert.equal(manifest.host[0].minVersion, '26.0.0');
+      assert.equal(manifest.host.minVersion, '26.0.0');
       assert.equal(manifest.requiredPermissions.webview.enableMessageBridge, 'localOnly');
       assert.deepEqual(manifest.requiredPermissions.webview.domains, []);
     }

@@ -13,13 +13,13 @@ type ManifestIcon = {
 
 type UxpManifest = {
   id: string;
-  host: { app: string; minVersion: string; data: { apiVersion: number } }[];
+  host: { app: string; minVersion: string; data: { apiVersion: number } };
   requiredPermissions: Record<string, unknown>;
   entrypoints: { icons: ManifestIcon[] }[];
   icons: ManifestIcon[];
 };
 
-it('keeps native and WebView Photoshop manifests on their own compatibility floors', () => {
+it('keeps Photoshop manifests publishable with one host and separate compatibility floors', () => {
   const native = JSON.parse(
     readFileSync('apps/photoshop-uxp/manifest.json', 'utf8'),
   ) as UxpManifest;
@@ -27,8 +27,8 @@ it('keeps native and WebView Photoshop manifests on their own compatibility floo
     readFileSync('apps/photoshop-uxp/manifest-webview.json', 'utf8'),
   ) as UxpManifest;
   expect(native.id).toBe(enhanced.id);
-  expect(native.host).toEqual([{ app: 'PS', minVersion: '24.0.0', data: { apiVersion: 2 } }]);
-  expect(enhanced.host).toEqual([{ app: 'PS', minVersion: '26.0.0', data: { apiVersion: 2 } }]);
+  expect(native.host).toEqual({ app: 'PS', minVersion: '24.0.0', data: { apiVersion: 2 } });
+  expect(enhanced.host).toEqual({ app: 'PS', minVersion: '26.0.0', data: { apiVersion: 2 } });
   expect(native.requiredPermissions).toEqual({ localFileSystem: 'request' });
   expect(enhanced.requiredPermissions.webview).toMatchObject({
     allow: 'yes',
