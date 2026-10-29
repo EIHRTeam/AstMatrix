@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, writeFile, rm, cp, readFile, readdir } from 'node:fs/pr
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { crc32, deflateRawSync } from 'node:zlib';
-import { validatePayload } from './build.mjs';
+import { validatePayload, checkCompilerVersion } from './build.mjs';
 import { readZip, safeRelative } from './zip.mjs';
 import {
   digest,
@@ -15,6 +15,45 @@ import {
 import { assembleRelease } from '../verify-release.mjs';
 
 const directories: string[] = [];
+
+it('detects the compiler engine without relying on the PE ProductVersion resource', () => {
+  const calls: unknown[] = [];
+  const version = checkCompilerVersion('C:\\Inno Setup 6\\ISCC.exe', (file, args, options) => {
+    calls.push({ file, args, options });
+    return 'Inno Setup 6 Command-Line Compiler\r\nCompiler engine version: Inno Setup 6.7.4\r\n';
+  });
+  expect(version).toBe('6.7.4');
+  expect(calls).toEqual([
+    {
+      file: 'C:\\Inno Setup 6\\ISCC.exe',
+      args: ['/O-', '-'],
+      options: { encoding: 'utf8', input: expect.stringContaining('Output=no') },
+    },
+  ]);
+});
+
+it.each(['6.7.3', '6.7.40', '7.1.1', '0.0.0'])('rejects compiler engine %s', (version) => {
+  expect(() =>
+    checkCompilerVersion('ISCC.exe', () => `Compiler engine version: Inno Setup ${version}\r\n`),
+  ).toThrow('Expected Inno Setup compiler engine 6.7.4');
+});
+
+it('does not mistake the major-version help banner for an engine version', () => {
+  expect(() =>
+    checkCompilerVersion(
+      'ISCC.exe',
+      () => 'Inno Setup 6 Command-Line Compiler\r\nUsage: iscc [options] scriptfile.iss',
+    ),
+  ).toThrow('did not report its compiler engine version');
+});
+
+it('propagates a failed probe compilation', () => {
+  expect(() =>
+    checkCompilerVersion('ISCC.exe', () => {
+      throw new Error('ISCmplr.dll could not load');
+    }),
+  ).toThrow('ISCmplr.dll could not load');
+});
 afterEach(async () => {
   await Promise.all(
     directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })),

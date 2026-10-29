@@ -3,6 +3,8 @@
 Two unsigned, per-user Windows 10/11 x64 installers wrap the existing Illustrator CEP ZIP
 and enhanced Photoshop CCX. Plugin payloads stay offline. Inno Setup 6.7.4 is downloaded
 at build time from its fixed official release and verified against its SHA-256 digest.
+The build probes the compiler with a no-output compilation and checks its reported engine
+version; the `ISCC.exe` PE `ProductVersion` resource is not a reliable version source.
 
 The manually triggered **Build Windows installers** workflow builds the selected commit,
 runs repository checks, prepares Adobe archives on Ubuntu, and compiles installers on

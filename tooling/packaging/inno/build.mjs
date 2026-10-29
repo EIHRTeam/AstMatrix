@@ -17,6 +17,29 @@ import { readZip } from './zip.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
+export function checkCompilerVersion(iscc, execute = execFileSync) {
+  // ISCC.exe's PE ProductVersion can be 0.0.0.0. Inno 6 has no --version,
+  // and /? only prints the major version. A no-output compile loads ISCmplr.dll
+  // and reports the actual engine version (including the patch component).
+  const output = execute(iscc, ['/O-', '-'], {
+    encoding: 'utf8',
+    input: [
+      '[Setup]',
+      'AppName=AstMatrix Compiler Probe',
+      'AppVersion=0.0.0',
+      'DefaultDirName={tmp}\\AstMatrix-Compiler-Probe',
+      'CreateAppDir=no',
+      'Uninstallable=no',
+      'Output=no',
+      '',
+    ].join('\n'),
+  });
+  const match = output.match(/^Compiler engine version:[^\r\n]*?\b(\d+\.\d+\.\d+)(?:\s|$)/m);
+  assert(match, `ISCC did not report its compiler engine version:\n${output}`);
+  assert.equal(match[1], '6.7.4', 'Expected Inno Setup compiler engine 6.7.4');
+  return match[1];
+}
+
 export function validatePayload(host, files, version) {
   assert(!files.has('payload-files.json'), 'Reserved installer payload inventory name');
   const required = [
@@ -102,17 +125,8 @@ async function main() {
     );
   const iscc = process.env.ASTMATRIX_ISCC;
   assert(iscc, 'ASTMATRIX_ISCC must point to the pinned Inno Setup compiler');
-  const compilerVersion = execFileSync(
-    'powershell.exe',
-    [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      '(Get-Item -LiteralPath $env:ASTMATRIX_ISCC).VersionInfo.ProductVersion',
-    ],
-    { encoding: 'utf8' },
-  ).trim();
-  assert.match(compilerVersion, /^6\.7\.4(?:\D|$)/, 'Expected Inno Setup 6.7.4');
+  const compilerVersion = checkCompilerVersion(iscc);
+  console.log(`Verified Inno Setup compiler engine ${compilerVersion}`);
   await mkdir(output, { recursive: true });
   const stage = await mkdtemp(path.join(output, '.stage-'));
   try {
@@ -156,7 +170,7 @@ async function main() {
       output,
       'installer-info.json',
       ['Illustrator', 'Photoshop'].map((host) => installerName(host, version)),
-      { compilerVersion: '6.7.4', payloadArtifacts: inventory.artifacts },
+      { compilerVersion, payloadArtifacts: inventory.artifacts },
     );
     await writeFile(
       path.join(output, 'SHA256SUMS.txt'),
