@@ -59,6 +59,8 @@ try {
   & {
     $state = Install-Photoshop $null
     Assert ($state.mode -eq 'extracted') 'missing UPIA extracts'
+    Assert ($state.files.Count -eq 2 -and $state.files[0].path -is [string]) 'JSON payload inventory is flat in Windows PowerShell 5.1 and PowerShell 7'
+    Assert ((Get-State).path -eq $state.path) 'UTF-8 state preserves Chinese usernames in Windows PowerShell 5.1'
     Assert (Test-OwnedFiles $state) 'deployed files match inventory'
     $state = Install-Photoshop $state
     Assert (Test-OwnedFiles $state) 'repeat installation works'
@@ -173,7 +175,7 @@ try {
       }
       $savedRegistry += $entry
     }
-    $version = (Get-Content (Join-Path $PSScriptRoot '../../../package.json') -Raw | ConvertFrom-Json).version
+    $version = (Get-Content (Join-Path $PSScriptRoot '../../../package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
     foreach ($hostName in @('Illustrator', 'Photoshop')) {
       $manager = Join-Path $root "$hostName manager"
       $setup = (Resolve-Path (Join-Path $InstallerDirectory "AstMatrix-$hostName-$version-Setup.exe")).Path
@@ -181,7 +183,7 @@ try {
         $process = Start-Process $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$manager`"", "/LOG=`"$root\$hostName-$attempt.log`"") -Wait -PassThru
         Assert ($process.ExitCode -eq 0) "$hostName EXE installation $attempt"
       }
-      $record = Get-Content (Join-Path $manager 'state.json') -Raw | ConvertFrom-Json
+      $record = Get-Content (Join-Path $manager 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
       Assert ($record.mode -eq 'extracted') 'host-free smoke test follows extraction path'
       if ($hostName -eq 'Illustrator') {
         foreach ($cep in @(11, 12)) {

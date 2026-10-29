@@ -21,7 +21,7 @@ function Write-JsonFile($Path, $Value) {
 
 function Get-State {
   $file = Join-Path $ManagerDir 'state.json'
-  if (Test-Path -LiteralPath $file) { return Get-Content -LiteralPath $file -Raw | ConvertFrom-Json }
+  if (Test-Path -LiteralPath $file) { return Get-Content -LiteralPath $file -Raw -Encoding UTF8 | ConvertFrom-Json }
   return $null
 }
 
@@ -137,7 +137,7 @@ function Get-InstalledPlugins {
       if ($folder.Attributes -band [IO.FileAttributes]::ReparsePoint) { continue }
       $manifest = Join-Path $folder.FullName 'manifest.json'
       if (!(Test-Path -LiteralPath $manifest)) { continue }
-      $data = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+      $data = Get-Content -LiteralPath $manifest -Raw -Encoding UTF8 | ConvertFrom-Json
       if ($data.id -eq '1f4db629') { [pscustomobject]@{ version = $data.version; path = $folder.FullName } }
     }
   }
@@ -148,7 +148,7 @@ function Test-AdobeRegistration {
   if (!(Test-Path -LiteralPath $directory)) { return $false }
   # Read-only detection. This private Adobe data is NEVER edited by this installer.
   foreach ($file in (Get-ChildItem -LiteralPath $directory -Filter '*.json' -File -Recurse)) {
-    if ((Get-Content -LiteralPath $file.FullName -Raw) -match '"1f4db629(?:_[^"]*)?"') { return $true }
+    if ((Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8) -match '"1f4db629(?:_[^"]*)?"') { return $true }
   }
   return $false
 }
@@ -208,7 +208,9 @@ function Remove-OwnedFiles($State) {
 
 function Install-Payload($Previous) {
   $destination = Get-PluginDestination $AppVersion
-  $files = @(Get-Content -LiteralPath (Join-Path $PayloadDir 'payload-files.json') -Raw | ConvertFrom-Json)
+  # PowerShell 5.1 emits a JSON array as one pipeline object; PowerShell 7
+  # enumerates its members. Assignment (without @(...)) preserves a flat array in both.
+  $files = Get-Content -LiteralPath (Join-Path $PayloadDir 'payload-files.json') -Raw -Encoding UTF8 | ConvertFrom-Json
   # Preflight every file before writing any file; reject foreign deployments and modifications.
   if ((Test-Path -LiteralPath $destination) -and (!$Previous -or $Previous.path -ne $destination -or !(Test-OwnedFiles $Previous))) { throw 'An unmanaged or externally modified plugin already occupies the destination.' }
   foreach ($entry in $files) {

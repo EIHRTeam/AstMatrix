@@ -31,7 +31,7 @@ runs:
         foreach ($hostName in @('Illustrator', 'Photoshop')) {
           $file = Get-Item "tmp/inno-output/AstMatrix-$hostName-$version-Setup.exe"
           $info = $file.VersionInfo
-          # FileVersion is display text (normally AppVersion, e.g. 0.1.2).
+          # FileVersion is display text and can contain trailing padding.
           # Compare the fixed numeric resource set by VersionInfoVersion instead.
           $actualVersion = @($info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart) -join '.'
           Write-Host "$($file.Name): numeric version $actualVersion; display version $($info.FileVersion)"
