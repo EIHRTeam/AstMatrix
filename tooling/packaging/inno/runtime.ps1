@@ -208,9 +208,11 @@ function Remove-OwnedFiles($State) {
 
 function Install-Payload($Previous) {
   $destination = Get-PluginDestination $AppVersion
-  # PowerShell 5.1 emits a JSON array as one pipeline object; PowerShell 7
-  # enumerates its members. Assignment (without @(...)) preserves a flat array in both.
-  $files = Get-Content -LiteralPath (Join-Path $PayloadDir 'payload-files.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  # Rebuild plain records: Windows PowerShell 5.1 can retain an ETS wrapper on
+  # a parsed array and serialize it as { value: [...], Count: n } when nested.
+  # Persist a regular array of hashes, never the parser's collection wrapper.
+  $parsedFiles = Get-Content -LiteralPath (Join-Path $PayloadDir 'payload-files.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  $files = @(foreach ($item in $parsedFiles) { @{ path = [string]$item.path; sha256 = [string]$item.sha256 } })
   # Preflight every file before writing any file; reject foreign deployments and modifications.
   if ((Test-Path -LiteralPath $destination) -and (!$Previous -or $Previous.path -ne $destination -or !(Test-OwnedFiles $Previous))) { throw 'An unmanaged or externally modified plugin already occupies the destination.' }
   foreach ($entry in $files) {

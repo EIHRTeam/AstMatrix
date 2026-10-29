@@ -214,6 +214,8 @@ try {
     $diagnostics = Join-Path $PSScriptRoot '../../../tmp/inno-tests'
     [IO.Directory]::CreateDirectory($diagnostics) | Out-Null
     Get-ChildItem -LiteralPath $root -Filter '*.log' | Copy-Item -Destination $diagnostics -Force
+    $fixtureState = Join-Path $root 'manager/state.json'
+    if (Test-Path -LiteralPath $fixtureState) { Copy-Item -LiteralPath $fixtureState -Destination (Join-Path $diagnostics 'fixture-state.json') -Force }
     foreach ($name in @('Illustrator', 'Photoshop')) {
       $manager = Join-Path $root "$name manager"
       foreach ($file in @('state.json', 'installer.log')) {
