@@ -361,6 +361,7 @@ function Invoke-Installer {
     [IO.File]::WriteAllText($ResultPath, "[result]`r`nmode=$($state.mode)`r`n")
   } catch {
     Write-Host "ERROR: $($_.Exception.Message)"
+    Write-Host $_.ScriptStackTrace
     throw
   } finally {
     if ($transcribing) { Stop-Transcript | Out-Null }

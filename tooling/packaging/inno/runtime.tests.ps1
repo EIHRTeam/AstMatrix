@@ -61,6 +61,7 @@ try {
     Assert ($state.mode -eq 'extracted') 'missing UPIA extracts'
     Assert ($state.files.Count -eq 2 -and $state.files[0].path -is [string]) 'JSON payload inventory is flat in Windows PowerShell 5.1 and PowerShell 7'
     Assert ((Get-State).path -eq $state.path) 'UTF-8 state preserves Chinese usernames in Windows PowerShell 5.1'
+    Assert (Test-OwnedFiles (Get-State)) 'persisted file inventory can be read back for repeat installation'
     Assert (Test-OwnedFiles $state) 'deployed files match inventory'
     $state = Install-Photoshop $state
     Assert (Test-OwnedFiles $state) 'repeat installation works'
@@ -213,6 +214,13 @@ try {
     $diagnostics = Join-Path $PSScriptRoot '../../../tmp/inno-tests'
     [IO.Directory]::CreateDirectory($diagnostics) | Out-Null
     Get-ChildItem -LiteralPath $root -Filter '*.log' | Copy-Item -Destination $diagnostics -Force
+    foreach ($name in @('Illustrator', 'Photoshop')) {
+      $manager = Join-Path $root "$name manager"
+      foreach ($file in @('state.json', 'installer.log')) {
+        $source = Join-Path $manager $file
+        if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination (Join-Path $diagnostics "$name-$file") -Force }
+      }
+    }
   }
   if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
 }
