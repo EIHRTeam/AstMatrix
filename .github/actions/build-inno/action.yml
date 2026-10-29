@@ -30,8 +30,13 @@ runs:
         $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
         foreach ($hostName in @('Illustrator', 'Photoshop')) {
           $file = Get-Item "tmp/inno-output/AstMatrix-$hostName-$version-Setup.exe"
-          if ($file.Length -le 1024 -or $file.VersionInfo.FileVersion -ne "$version.0") {
-            throw "Invalid installer or version: $($file.Name)"
+          $info = $file.VersionInfo
+          # FileVersion is display text (normally AppVersion, e.g. 0.1.2).
+          # Compare the fixed numeric resource set by VersionInfoVersion instead.
+          $actualVersion = @($info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart) -join '.'
+          Write-Host "$($file.Name): numeric version $actualVersion; display version $($info.FileVersion)"
+          if ($file.Length -le 1024 -or $actualVersion -ne "$version.0") {
+            throw "Invalid installer or version: $($file.Name); expected $version.0, got $actualVersion"
           }
         }
     - name: Runtime and installer smoke tests
