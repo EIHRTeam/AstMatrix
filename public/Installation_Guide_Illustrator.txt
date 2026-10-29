@@ -1,5 +1,22 @@
 	AstMatrix for Illustrator Installation Guide
 
+Windows Installer (.exe)
+
+		Download AstMatrix-Illustrator-<version>-Setup.exe from:
+		https://github.com/EIHRTeam/AstMatrix/releases/latest
+		Close Illustrator and run setup on Windows 10/11 x64.
+		Supported Illustrator versions: 27.x through 30.9.x.
+		Setup installs for the current user and sets PlayerDebugMode
+		to REG_SZ "1" for CEP 11 and CEP 12. These shared settings
+		are retained when uninstalling to protect other extensions.
+		Restart Illustrator, then select Window > Extensions > AstMatrix.
+		Run a newer installer to upgrade; downgrades are rejected.
+		Uninstall through Windows Installed apps. Externally modified
+		plugin files are preserved. Setup never force-closes Adobe apps.
+		The EXE is unsigned and includes all plugin resources.
+		Setup does not download plugins or Adobe runtimes.
+		Diagnostics: %LOCALAPPDATA%\AstMatrix\Installers\Illustrator\installer.log
+
 A. Install via Adobe Creative Cloud
 
 	1. Make sure Adobe Creative Cloud is installed and that you are

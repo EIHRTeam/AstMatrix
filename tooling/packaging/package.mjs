@@ -10,6 +10,11 @@
  *   astmatrix-illustrator.zxp      CEP, may contain web/cep11 + web/cep12
  *   astmatrix-photoshop.ccx        UXP, manifest v5, host.minVersion >= Photoshop 24.x
  *   astmatrix-affinity/            Affinity script bundle distributed per SDK support
+ *   AstMatrix-Illustrator-<version>-Setup.exe   Windows Inno Setup installer
+ *   AstMatrix-Photoshop-<version>-Setup.exe     Windows Inno Setup installer
+ *
+ * Actual ZIP/CCX releases use prepare.mjs; Windows installers use inno/build.mjs.
+ * This command remains a packaging-plan display, including planned signed ZXP artifacts.
  *
  * Split packages (astmatrix-illustrator-cep11.zxp / cep12.zxp, or a UXP compatibility +
  * enhancement pair) are only produced when the single-package constraints genuinely conflict.
@@ -83,6 +88,20 @@ const PLANNED_ARTIFACTS = [
       'index.js',
       'webview/',
       'licenses/',
+    ],
+  },
+  {
+    name: 'AstMatrix-Illustrator-<version>-Setup.exe',
+    target: 'windows-inno-illustrator',
+    contents: ['Illustrator ZIP payload', 'per-user installer controller'],
+  },
+  {
+    name: 'AstMatrix-Photoshop-<version>-Setup.exe',
+    target: 'windows-inno-photoshop',
+    contents: [
+      'Photoshop enhanced CCX',
+      'UPIA-first controller',
+      'experimental extraction payload',
     ],
   },
   {

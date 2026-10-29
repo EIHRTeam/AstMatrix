@@ -1,0 +1,58 @@
+name: Build Inno Setup installers
+description: Compile and verify Windows installers from this run's Adobe package artifact.
+inputs:
+  payload-artifact:
+    description: Name of the current run's Adobe payload artifact
+    required: true
+  installer-artifact:
+    description: Name of the resulting installer artifact
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+    - uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.payload-artifact }}
+        path: tmp/inno-input
+    - name: Install pinned compiler
+      shell: pwsh
+      run: ./tooling/packaging/inno/install-compiler.ps1
+    - name: Compile installers
+      shell: pwsh
+      run: node tooling/packaging/inno/build.mjs --input-dir=tmp/inno-input --output-dir=tmp/inno-output
+    - name: Check EXE versions
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+        foreach ($hostName in @('Illustrator', 'Photoshop')) {
+          $file = Get-Item "tmp/inno-output/AstMatrix-$hostName-$version-Setup.exe"
+          if ($file.Length -le 1024 -or $file.VersionInfo.FileVersion -ne "$version.0") {
+            throw "Invalid installer or version: $($file.Name)"
+          }
+        }
+    - name: Runtime and installer smoke tests
+      shell: powershell
+      run: ./tooling/packaging/inno/runtime.tests.ps1 -InstallerDirectory tmp/inno-output
+    - name: Upload installers
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.installer-artifact }}
+        path: |
+          tmp/inno-output/*.exe
+          tmp/inno-output/installer-info.json
+          tmp/inno-output/SHA256SUMS.txt
+        retention-days: 30
+        if-no-files-found: error
+        compression-level: 0
+    - name: Upload build diagnostics
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.installer-artifact }}-diagnostics
+        path: tmp/inno-tests/
+        retention-days: 30
+        if-no-files-found: ignore

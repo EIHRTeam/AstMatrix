@@ -1,5 +1,27 @@
 	AstMatrix for Photoshop Installation Guide
 
+Windows Installer (.exe)
+
+		Download AstMatrix-Photoshop-<version>-Setup.exe from:
+		https://github.com/EIHRTeam/AstMatrix/releases/latest
+		Close Photoshop and run setup on Windows 10/11 x64.
+		Requires Photoshop 26.0+ and its Adobe WebView dependencies.
+		Setup first invokes the existing Adobe Unified Plugin Installer
+		Agent (UPIA). If it is missing, cannot launch, or reports a
+		recognized environment failure, setup tries experimental extraction
+		to %APPDATA%\Adobe\UXP\Plugins\External\1f4db629_<version>\.
+		Extraction only confirms that files were deployed. Restart
+		Photoshop and verify that Plugins > AstMatrix is available.
+		Adobe's internal plugin registration JSON is never modified.
+		Cancellation, invalid packages, incompatible hosts, conflicting
+		copies, and unresolved UPIA operations do not trigger extraction.
+		Run a newer installer to upgrade; downgrades are rejected.
+		Uninstall through Windows Installed apps. Externally updated or
+		modified plugins are preserved. Setup never force-closes Adobe apps.
+		The EXE is unsigned and includes all plugin resources.
+		Setup does not download UPIA, plugins, or Adobe runtimes.
+		Diagnostics: %LOCALAPPDATA%\AstMatrix\Installers\Photoshop\installer.log
+
 	For sections B, C, and D, download the latest Photoshop .ccx
 	package from:
 	https://github.com/EIHRTeam/AstMatrix/releases/latest
@@ -71,15 +93,21 @@ C. Install via Adobe Universal Plugin Installer Agent (UPIA)
 
 
 
-D. Manual Extraction
+D. Manual Extraction (Experimental)
 
 	1. Open the .ccx file using a ZIP archive utility (e.g.,
 	   7-Zip, ShichiZip, or Keka).
 
 	2. Extract its contents to the following directory for your
 	   operating system:
-	   Windows: %APPDATA%\Adobe\UXP\Plugins\External\
+		   Windows: %APPDATA%\Adobe\UXP\Plugins\External\1f4db629_<version>\
 	   macOS: ~/Library/Application Support/Adobe/UXP/Plugins/
+		   On Windows, create the plugin-specific directory above and
+		   place manifest.json directly inside it, without another folder.
+		   Extraction may not register the plugin in current Photoshop.
+		   If it does not load, use Creative Cloud or UPIA instead.
+		   Do not edit Adobe's internal plugin registration JSON or keep
+		   extracted and Adobe-managed copies installed together.
 
 	3. Open Photoshop (or restart it completely if it is already
 	   running), then select "Plugins" > "AstMatrix" to

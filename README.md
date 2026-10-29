@@ -177,6 +177,14 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 ### Adobe Illustrator
 
+**Windows installer (.exe)**
+
+1. Download `AstMatrix-Illustrator-<version>-Setup.exe` from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest), close Illustrator, and run it on Windows 10/11 x64.
+2. The installer deploys the extension for the current user and enables the shared CEP 11/12 `PlayerDebugMode` settings (`REG_SZ`, `1`). These settings are retained on uninstall so other unsigned extensions keep working.
+3. Restart Illustrator and select "Window" > "Extensions" > "AstMatrix". Supported Illustrator versions are 27.x through 30.9.x.
+
+Upgrade by running a newer installer. Remove it through Windows Installed apps. EXE installers are unsigned; plugin resources are included and no plugin or Adobe runtime is downloaded during setup.
+
 **Via Adobe Creative Cloud**
 
 1. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
@@ -210,6 +218,14 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 6. Open Illustrator (or restart it completely if it is already running), then select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
 
 ### Adobe Photoshop
+
+**Windows installer (.exe)**
+
+1. Download `AstMatrix-Photoshop-<version>-Setup.exe` from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest), close Photoshop, and run it on Windows 10/11 x64. This package requires Photoshop 26.0 or later and its Adobe WebView dependencies.
+2. Setup first uses the existing Adobe Unified Plugin Installer Agent (UPIA). If UPIA is missing, cannot start, or reports a recognized environment failure, setup attempts **experimental extraction** into a versioned plugin directory. It does not edit Adobe's internal plugin registration JSON.
+3. Restart Photoshop and check "Plugins" > "AstMatrix". **Extraction confirms file deployment only; Photoshop loading is not verified.** Cancelled, incompatible, invalid-package, conflicting-installation, and unresolved UPIA operations do not trigger extraction.
+
+Upgrade by running a newer installer; downgrades are rejected. Remove it through Windows Installed apps. Setup uses the recorded installation method for removal and preserves externally updated or modified plugin files. Diagnostics are saved to `%LOCALAPPDATA%\AstMatrix\Installers\Photoshop\installer.log`. EXE installers are unsigned and include all plugin resources; setup does not download UPIA or Adobe runtimes.
 
 **Via Adobe Creative Cloud**
 
@@ -248,16 +264,18 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 4. Open Photoshop (or restart it completely if it is already running), then select "Plugins" > "AstMatrix" to launch the plugin.
 
-**Manual extraction**
+**Manual extraction (experimental)**
 
 1. Download the latest Photoshop `.ccx` package from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
 2. Open the `.ccx` file using a ZIP archive utility (e.g., 7-Zip, ShichiZip, or Keka).
 3. Extract its contents to the following directory:
 
-   - Windows: `%APPDATA%\Adobe\UXP\Plugins\External\`
+   - Windows: `%APPDATA%\Adobe\UXP\Plugins\External\1f4db629_<version>\` (create this plugin-specific directory; `manifest.json` must be directly inside it)
    - macOS: `~/Library/Application Support/Adobe/UXP/Plugins/`
 
 4. Open Photoshop (or restart it completely if it is already running), then select "Plugins" > "AstMatrix" to launch the plugin.
+
+Extraction may not register the plugin with current Photoshop/Creative Cloud versions. If it does not appear, use Creative Cloud or UPIA instead; do not modify Adobe's internal registration JSON. Avoid keeping extracted and Adobe-managed copies of the same plugin together.
 
 ### Figma
 

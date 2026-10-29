@@ -1,14 +1,11 @@
 name: Release
 
-# Manual, main-only release:
-#   checks -> version/manifest verification -> host bundles -> archives -> tag -> GitHub release
-# Signing and store submission stay manual; see tooling/packaging/package.mjs.
-
+# Same-commit payloads -> Windows installers -> verified assets -> tag and release.
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-main
@@ -18,10 +15,13 @@ env:
   NODE_VERSION: '24'
 
 jobs:
-  release:
-    name: Build and publish release
+  prepare:
+    name: Check and prepare release packages
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Require main branch
         run: |
@@ -29,57 +29,19 @@ jobs:
             echo '::error::Release must be triggered from main'
             exit 1
           fi
-
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      - run: pnpm install --frozen-lockfile
       - name: Read and verify release version
         id: version
-        run: |
-          node --input-type=module <<'NODE'
-          import { appendFileSync, readFileSync } from 'node:fs'
-
-          const { version } = JSON.parse(readFileSync('package.json', 'utf8'))
-          if (typeof version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
-            throw new Error('package.json version must have the form X.Y.Z')
-          }
-
-          // Host manifests carry their own version copy; never tag a mixed build.
-          const cep = readFileSync('apps/illustrator-cep/CSXS/manifest.xml', 'utf8')
-          const cepVersions = [
-            cep.match(/ExtensionBundleVersion="([^"]+)"/)?.[1],
-            ...[...cep.matchAll(/<Extension\b[^>]*\bVersion="([^"]+)"/g)].map((match) => match[1]),
-          ].filter(Boolean)
-          if (cepVersions.length < 2 || cepVersions.some((value) => value !== version)) {
-            throw new Error(`Illustrator CEP manifest version does not match ${version}`)
-          }
-          for (const manifestPath of [
-            'apps/photoshop-uxp/manifest.json',
-            'apps/photoshop-uxp/manifest-webview.json',
-          ]) {
-            const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-            if (manifest.version !== version) {
-              throw new Error(`${manifestPath} version does not match ${version}`)
-            }
-          }
-
-          appendFileSync(process.env.GITHUB_OUTPUT, `tag=v${version}\nversion=${version}\n`)
-          NODE
-
+        run: node tooling/packaging/prepare.mjs --version-only
       - name: Ensure release tag is new
         env:
           GH_TOKEN: ${{ github.token }}
@@ -89,63 +51,84 @@ jobs:
             echo "::error::Tag ${TAG} already exists; bump package.json and the host manifests first"
             exit 1
           fi
-
-      - name: Run repository checks
-        run: pnpm check
-
-      - name: Build host bundles
+      - run: pnpm check
+      - name: Build and verify host bundles
         run: |
           pnpm build:illustrator
           pnpm build:photoshop
           pnpm build:figma
           pnpm check:host-bundles
+      - name: Assemble release packages
+        run: node tooling/packaging/prepare.mjs --with-figma
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-payload-${{ steps.version.outputs.version }}
+          path: release/*
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
 
-      - name: Assemble release assets
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          rm -rf release
-          mkdir -p release
+  installers:
+    name: Compile Windows installers
+    needs: prepare
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/build-inno
+        with:
+          payload-artifact: release-payload-${{ needs.prepare.outputs.version }}
+          installer-artifact: release-installers-${{ needs.prepare.outputs.version }}
 
-          # CEP package contents start at CSXS/manifest.xml, without a wrapper directory.
-          (cd apps/illustrator-cep/dist && \
-            zip -qr "${GITHUB_WORKSPACE}/release/AstMatrix-Illustrator-${VERSION}.zip" .)
-
-          # UXP .ccx archives are zip files with manifest.json at the archive root.
-          # Publish only the enhanced (WebView) Photoshop package.
-          (cd apps/photoshop-uxp/dist/enhanced && \
-            zip -qr "${GITHUB_WORKSPACE}/release/AstMatrix-Photoshop-${VERSION}.ccx" .)
-
-          # Figma Desktop imports the extracted manifest.json from the archive root.
-          (cd apps/figma-plugin/dist && \
-            zip -qr "${GITHUB_WORKSPACE}/release/AstMatrix-Figma-${VERSION}.zip" .)
-
-          ls -lh release
-
-      - name: Upload workflow artifact
+  publish:
+    name: Verify and publish release
+    needs: [prepare, installers]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-payload-${{ needs.prepare.outputs.version }}
+          path: tmp/release-payload
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-installers-${{ needs.prepare.outputs.version }}
+          path: tmp/release-installers
+      - name: Verify all five assets and their provenance
+        run: node tooling/packaging/verify-release.mjs
+      - name: Upload complete release artifact
         uses: actions/upload-artifact@v7
         with:
-          name: AstMatrix-${{ steps.version.outputs.version }}
+          name: AstMatrix-${{ needs.prepare.outputs.version }}
           path: release/*
-          if-no-files-found: error
+          retention-days: 30
           compression-level: 0
-
+          if-no-files-found: error
       - name: Create release tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
+          TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          # Creating a ref fails if it already exists, even for the same commit.
           gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
             -f "ref=refs/tags/${TAG}" \
-            -f "sha=$(git rev-parse HEAD)"
-
+            -f "sha=${GITHUB_SHA}"
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.tag }}
           files: release/*
           fail_on_unmatched_files: true
           generate_release_notes: true

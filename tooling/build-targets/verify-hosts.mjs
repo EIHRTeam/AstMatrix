@@ -6,12 +6,13 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { verifyFigma } from './verify-figma.mjs';
 import { verifyPhotoshopIcons } from './photoshop-icons.ts';
-const destination = process.argv[2] ?? 'tmp/host-bundles.json';
+const destination =
+  process.argv.slice(2).find((arg) => !arg.startsWith('--')) ?? 'tmp/host-bundles.json';
 const roots = [
   'apps/illustrator-cep/dist',
   'apps/photoshop-uxp/dist/native',
   'apps/photoshop-uxp/dist/enhanced',
-  'apps/figma-plugin/dist',
+  ...(process.argv.includes('--adobe-only') ? [] : ['apps/figma-plugin/dist']),
 ];
 const records = [];
 for (const root of roots) {

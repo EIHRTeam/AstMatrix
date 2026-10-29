@@ -1,0 +1,63 @@
+name: Build Windows installers
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inno-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare Adobe packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify version
+        id: version
+        run: node tooling/packaging/prepare.mjs --version-only
+      - run: pnpm check
+      - name: Build and verify Adobe bundles
+        run: |
+          pnpm build:illustrator
+          pnpm build:photoshop
+          node tooling/build-targets/verify-hosts.mjs --adobe-only
+      - name: Prepare installer inputs
+        run: node tooling/packaging/prepare.mjs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: inno-payload-${{ steps.version.outputs.version }}
+          path: release/*
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+
+  installers:
+    name: Compile Windows installers
+    needs: prepare
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/build-inno
+        with:
+          payload-artifact: inno-payload-${{ needs.prepare.outputs.version }}
+          installer-artifact: AstMatrix-Windows-Installers-${{ needs.prepare.outputs.version }}

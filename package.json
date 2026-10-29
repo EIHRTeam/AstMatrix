@@ -10,6 +10,7 @@
     "build": "node tooling/build-targets/build.mjs",
     "build:illustrator": "node tooling/build-targets/build.mjs illustrator",
     "build:photoshop": "node tooling/build-targets/build.mjs photoshop",
+    "build:inno": "node tooling/packaging/inno/build.mjs",
     "build:affinity": "node tooling/build-targets/build.mjs affinity",
     "build:web": "node tooling/build-targets/build.mjs web",
     "build:target": "node tooling/build-targets/build.mjs target",
