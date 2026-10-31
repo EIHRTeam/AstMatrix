@@ -1,5 +1,8 @@
-# No Pester dependency. All mocks live in this test file, never in the shipped installer.
-param([string]$InstallerDirectory)
+﻿# No Pester dependency. All mocks live in this test file, never in the shipped installer.
+param(
+  [string]$InstallerDirectory,
+  [ValidateSet('x64', 'aarch64')][string]$Architecture = 'x64'
+)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/runtime.ps1"
 
@@ -35,6 +38,49 @@ try {
   $entries = @('manifest.json', 'index.js') | ForEach-Object { @{ path = $_; sha256 = (Get-FileHash (Join-Path $PayloadDir $_)).Hash } }
   Write-JsonFile (Join-Path $PayloadDir 'payload-files.json') @($entries)
 
+  & {
+    $ValidateRegistration = $true
+    $RegisteredVersion = ''
+    Assert-Registration $null
+    $legacyState = [pscustomobject]@{ version = '0.1.1' }
+    Assert-Throws { Assert-Registration $legacyState } 'orphaned state cannot be overwritten'
+    $RegisteredVersion = '0.1.1'
+    Assert-Registration $legacyState
+    Assert-Throws { Assert-Registration $null } 'registered install requires state'
+    Assert-Throws { Assert-Registration ([pscustomobject]@{ version = '0.1.2' }) } 'registry and state version must agree'
+  }
+
+  & {
+    $ManagerDir = Join-Path $root 'shortcut manager'
+    [IO.Directory]::CreateDirectory($ManagerDir) | Out-Null
+    $UninstallerPath = Join-Path $ManagerDir 'unins000.exe'
+    [IO.File]::WriteAllText($UninstallerPath, 'uninstaller fixture')
+    # Mock only the COM adapter, keeping path validation, inventory and migration real.
+    function Write-UninstallShortcut($Path) { [IO.File]::WriteAllText($Path, $UninstallerPath) }
+    $first = Join-Path $root 'Adobe actual path'
+    $second = Join-Path $root 'Adobe updated path'
+    [IO.Directory]::CreateDirectory($first) | Out-Null
+    [IO.Directory]::CreateDirectory($second) | Out-Null
+    $shortcutState = @{ mode = 'upia'; pluginPath = $first; path = 'must not use the extraction path' }
+    Install-UninstallShortcut $shortcutState
+    Assert ((Get-ShortcutRecord).directory -eq $first) 'UPIA shortcut uses actual pluginPath'
+    Install-UninstallShortcut $shortcutState
+    Assert (Test-Path (Get-ShortcutPath $first)) 'repeat shortcut creation works'
+    & {
+      function Write-JsonFile { throw 'Injected shortcut inventory failure' }
+      Assert-Throws { Install-UninstallShortcut $shortcutState } 'shortcut commit failure propagates'
+      Assert ((Get-FileHash (Get-ShortcutPath $first)).Hash -eq (Get-ShortcutRecord).sha256) 'shortcut failure restores the old link'
+    }
+    $shortcutState.pluginPath = $second
+    Install-UninstallShortcut $shortcutState
+    Assert (!(Test-Path (Get-ShortcutPath $first))) 'migration removes unchanged old shortcut'
+    Assert (Test-Path (Get-ShortcutPath $second)) 'migration creates new shortcut'
+    [IO.File]::WriteAllText((Get-ShortcutPath $second), 'foreign modification')
+    Assert-Throws { Install-UninstallShortcut $shortcutState } 'modified shortcut cannot be overwritten'
+    Remove-UninstallShortcut (Get-ShortcutRecord)
+    Assert (Test-Path (Get-ShortcutPath $second)) 'modified shortcut survives removal'
+  }
+
   foreach ($code in @(-175, -402, -403, -410, -411, -204, -999, 1602, 1223)) {
     Assert ((Get-UpiaDisposition @{ status = 'exited'; code = $code; text = '' }) -eq 'stop') "UPIA code $code must not extract"
   }
@@ -63,6 +109,7 @@ try {
     Assert ((Get-State).path -eq $state.path) 'UTF-8 state preserves Chinese usernames in Windows PowerShell 5.1'
     Assert (Test-OwnedFiles (Get-State)) 'persisted file inventory can be read back for repeat installation'
     Assert (Test-OwnedFiles $state) 'deployed files match inventory'
+    Assert ($null -eq (Get-ShortcutRecord)) 'legacy state needs no shortcut record'
     $state = Install-Photoshop $state
     Assert (Test-OwnedFiles $state) 'repeat installation works'
     & {
@@ -83,6 +130,7 @@ try {
     Write-JsonFile (Join-Path $PayloadDir 'payload-files.json') @($entries)
     $state = Install-Payload $null
     & {
+      $AppVersion = '0.1.3'
       $script:failCopy = $true
       function Copy-Item {
         param([string]$LiteralPath, [string]$Destination, [switch]$Force)
@@ -91,6 +139,8 @@ try {
       }
       Assert-Throws { Install-Payload $state } 'failed deployment throws'
       Assert (Test-OwnedFiles $state) 'failed deployment restored previous files'
+      Assert ((Get-State).version -eq $state.version) 'failed deployment retained previous state'
+      Assert (!(Test-Path (Join-Path (Get-PluginDestination $AppVersion) 'manifest.json'))) 'failed upgrade left no new plugin manifest'
     }
     Assert-Throws { Get-SafeFilePath $state.path '../foreign.txt' } 'traversal rejected'
     [IO.File]::WriteAllText((Join-Path $state.path 'index.js'), '// modified externally')
@@ -163,8 +213,32 @@ try {
   Assert ($script:RemoveCalls -eq 0) 'externally updated plugin preserved'
   Assert-Throws { Install-Photoshop $null } 'downgrade rejected'
 
+  & {
+    $Operation = 'preflight'
+    $AppVersion = '0.1.1'
+    function Assert-NoHostProcess {}
+    function Test-HostCompatibility { return 'compatible' }
+    function Get-State { return $managed }
+    Assert-Throws { Invoke-Installer } 'controller rejects downgrade before modifying payload'
+    $Operation = 'uninstall'
+    & {
+      $DisableCepDeveloperMode = $true
+      $script:removed = $false
+      function Uninstall-Plugin { $script:removed = $true }
+      Assert-Throws { Invoke-Installer } 'Photoshop rejects the Illustrator-only switch'
+      Assert (!$script:removed) 'invalid switch cannot start removal'
+    }
+    function Uninstall-Plugin { throw 'Injected removal failure' }
+    $before = Get-Content (Join-Path $ManagerDir 'state.json') -Raw
+    Assert-Throws { Invoke-Installer } 'removal failure propagates'
+    Assert ((Get-Content (Join-Path $ManagerDir 'state.json') -Raw) -eq $before) 'removal failure retains persisted state'
+  }
+
   if ($InstallerDirectory) {
     Assert $windows 'EXE smoke tests require Windows'
+    $nativeArchitecture = [Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITEW6432')
+    if (!$nativeArchitecture) { $nativeArchitecture = $env:PROCESSOR_ARCHITECTURE }
+    Assert (($Architecture -eq 'aarch64') -eq ($nativeArchitecture -eq 'ARM64')) 'installer tests must run on the requested native OS architecture'
     # Preserve any prior shared setting; hosted runners should have none.
     foreach ($cep in @(11, 12)) {
       $keyPath = "Software\Adobe\CSXS.$cep"
@@ -179,13 +253,29 @@ try {
     $version = (Get-Content (Join-Path $PSScriptRoot '../../../package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
     foreach ($hostName in @('Illustrator', 'Photoshop')) {
       $manager = Join-Path $root "$hostName manager"
-      $setup = (Resolve-Path (Join-Path $InstallerDirectory "AstMatrix-$hostName-$version-Setup.exe")).Path
+      $suffix = if ($Architecture -eq 'aarch64') { '-aarch64' } else { '' }
+      $setup = (Resolve-Path (Join-Path $InstallerDirectory "AstMatrix-$hostName-$version$suffix-Setup.exe")).Path
+      $otherSuffix = if ($Architecture -eq 'aarch64') { '' } else { '-aarch64' }
+      $wrongSetup = (Resolve-Path (Join-Path $InstallerDirectory "AstMatrix-$hostName-$version$otherSuffix-Setup.exe")).Path
+      $process = Start-Process $wrongSetup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$manager`"") -Wait -PassThru
+      Assert ($process.ExitCode -ne 0 -and !(Test-Path (Join-Path $manager 'state.json'))) 'wrong architecture is rejected before deployment'
       foreach ($attempt in @(1, 2)) {
         $process = Start-Process $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$manager`"", "/LOG=`"$root\$hostName-$attempt.log`"") -Wait -PassThru
         Assert ($process.ExitCode -eq 0) "$hostName EXE installation $attempt"
       }
       $record = Get-Content (Join-Path $manager 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
       Assert ($record.mode -eq 'extracted') 'host-free smoke test follows extraction path'
+      $shortcutRecord = Get-Content (Join-Path $manager 'uninstall-shortcut.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+      Assert ($shortcutRecord.directory -eq $record.path) 'plugin uninstall shortcut is recorded separately'
+      Assert (Test-Path (Get-ShortcutPath $record.path)) 'plugin uninstall shortcut exists'
+      $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) "AstMatrix\卸载 AstMatrix for $hostName.lnk"
+      $wscript = New-Object -ComObject WScript.Shell
+      try {
+        foreach ($link in @((Get-ShortcutPath $record.path), $startMenu)) {
+          Assert (Test-Path $link) 'uninstall entry point exists'
+          Assert ($wscript.CreateShortcut($link).TargetPath -eq (Join-Path $manager 'unins000.exe')) 'entry point targets stable Inno uninstaller'
+        }
+      } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript) }
       if ($hostName -eq 'Illustrator') {
         foreach ($cep in @(11, 12)) {
           $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Software\Adobe\CSXS.$cep")
@@ -195,7 +285,16 @@ try {
       $process = Start-Process (Join-Path $manager 'unins000.exe') -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=`"$root\$hostName-uninstall.log`"") -Wait -PassThru
       Assert ($process.ExitCode -eq 0) "$hostName EXE uninstall"
       Assert (!(Test-Path (Join-Path $record.path $(if ($hostName -eq 'Photoshop') {'manifest.json'} else {'CSXS\manifest.xml'})))) 'uninstall removed plugin manifest'
+      Assert (!(Test-Path $startMenu) -and !(Test-Path (Get-ShortcutPath $record.path))) 'uninstall removed both entry points'
+      if ($hostName -eq 'Illustrator') {
+        foreach ($cep in @(11, 12)) {
+          $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Software\Adobe\CSXS.$cep")
+          try { Assert ($key.GetValue('PlayerDebugMode') -eq '1') 'silent uninstall retains shared developer mode' } finally { $key.Dispose() }
+        }
+      }
     }
+    & $shell -NoLogo -NoProfile -File "$PSScriptRoot/upgrade.tests.ps1" -Architecture $Architecture
+    Assert ($LASTEXITCODE -eq 0) 'isolated old-to-new EXE and uninstall option tests'
   }
   Write-Host 'Runtime and installer tests passed. Adobe host loading was not tested.'
 } finally {

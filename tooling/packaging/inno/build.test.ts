@@ -1,9 +1,10 @@
 import { afterEach, expect, it } from 'vitest';
+import { writeFileSync } from 'node:fs';
 import { mkdtemp, mkdir, writeFile, rm, cp, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { crc32, deflateRawSync } from 'node:zlib';
-import { validatePayload, checkCompilerVersion } from './build.mjs';
+import { validatePayload, checkCompilerVersion, compilePayloadInstallers } from './build.mjs';
 import { readZip, safeRelative } from './zip.mjs';
 import {
   digest,
@@ -11,6 +12,7 @@ import {
   verifyInventory,
   archiveName,
   installerName,
+  installerArchitectures,
 } from '../artifacts.mjs';
 import { assembleRelease } from '../verify-release.mjs';
 
@@ -18,36 +20,36 @@ const directories: string[] = [];
 
 it('detects the compiler engine without relying on the PE ProductVersion resource', () => {
   const calls: unknown[] = [];
-  const version = checkCompilerVersion('C:\\Inno Setup 6\\ISCC.exe', (file, args, options) => {
+  const version = checkCompilerVersion('C:\\Inno Setup 7\\ISCC.exe', (file, args, options) => {
     calls.push({ file, args, options });
-    return 'Inno Setup 6 Command-Line Compiler\r\nCompiler engine version: Inno Setup 6.7.4\r\n';
+    return '7.1.1\r\n';
   });
-  expect(version).toBe('6.7.4');
+  expect(version).toBe('7.1.1');
   expect(calls).toEqual([
     {
-      file: 'C:\\Inno Setup 6\\ISCC.exe',
-      args: ['/O-', '-'],
-      options: { encoding: 'utf8', input: expect.stringContaining('Output=no') },
+      file: 'C:\\Inno Setup 7\\ISCC.exe',
+      args: ['--version'],
+      options: { encoding: 'utf8' },
     },
   ]);
 });
 
-it.each(['6.7.3', '6.7.40', '7.1.1', '0.0.0'])('rejects compiler engine %s', (version) => {
-  expect(() =>
-    checkCompilerVersion('ISCC.exe', () => `Compiler engine version: Inno Setup ${version}\r\n`),
-  ).toThrow('Expected Inno Setup compiler engine 6.7.4');
+it.each(['6.7.4', '7.1.0', '7.1.10', '7.2.0', '0.0.0'])('rejects compiler engine %s', (version) => {
+  expect(() => checkCompilerVersion('ISCC.exe', () => `${version}\r\n`)).toThrow(
+    'Expected Inno Setup compiler engine 7.1.1',
+  );
 });
 
 it('does not mistake the major-version help banner for an engine version', () => {
   expect(() =>
     checkCompilerVersion(
       'ISCC.exe',
-      () => 'Inno Setup 6 Command-Line Compiler\r\nUsage: iscc [options] scriptfile.iss',
+      () => 'Inno Setup 7 Command-Line Compiler\r\nUsage: iscc [options] scriptfile.iss',
     ),
   ).toThrow('did not report its compiler engine version');
 });
 
-it('propagates a failed probe compilation', () => {
+it('propagates a failed compiler version query', () => {
   expect(() =>
     checkCompilerVersion('ISCC.exe', () => {
       throw new Error('ISCmplr.dll could not load');
@@ -64,6 +66,75 @@ async function temporary() {
   directories.push(directory);
   return directory;
 }
+
+it('preserves x64 download names and distinguishes the aarch64 installers', () => {
+  expect(installerName('Illustrator', '0.1.2')).toBe('AstMatrix-Illustrator-0.1.2-Setup.exe');
+  expect(installerName('Photoshop', '0.1.2', 'x64')).toBe('AstMatrix-Photoshop-0.1.2-Setup.exe');
+  expect(installerName('Illustrator', '0.1.2', 'aarch64')).toBe(
+    'AstMatrix-Illustrator-0.1.2-aarch64-Setup.exe',
+  );
+  // Invalid architectures must not silently select x64.
+  expect(() => installerName('Photoshop', '0.1.2', 'arm32' as 'x64')).toThrow(
+    'Unsupported installer architecture',
+  );
+});
+
+it.each(['Illustrator', 'Photoshop'])(
+  'compiles both %s target architectures from the same payload',
+  async (host) => {
+    const output = await temporary();
+    const calls: string[][] = [];
+    const names = await compilePayloadInstallers(
+      'ISCC.exe',
+      host,
+      '0.1.2',
+      'payload',
+      'archive.ccx',
+      output,
+      (_file, args) => {
+        calls.push(args);
+        const name = args.find((arg) => arg.startsWith('/F'))!.slice(2) + '.exe';
+        const bytes = Buffer.alloc(2048);
+        bytes.write('MZ');
+        writeFileSync(path.join(output, name), bytes);
+      },
+    );
+    expect(names).toEqual(
+      installerArchitectures.map((architecture) => installerName(host, '0.1.2', architecture)),
+    );
+    expect(calls).toHaveLength(2);
+    for (const [index, architecture] of installerArchitectures.entries()) {
+      expect(calls[index]).toEqual(
+        expect.arrayContaining([
+          `/DTargetArchitecture=${architecture}`,
+          '/DPayloadDir=payload',
+          '/DArchivePath=archive.ccx',
+          `/F${installerName(host, '0.1.2', architecture).slice(0, -4)}`,
+        ]),
+      );
+    }
+  },
+);
+
+it('rejects an invalid aarch64 compiler output', async () => {
+  const output = await temporary();
+  await expect(
+    compilePayloadInstallers(
+      'ISCC.exe',
+      'Illustrator',
+      '0.1.2',
+      'payload',
+      'archive',
+      output,
+      (_file, args) => {
+        const name = args.find((arg) => arg.startsWith('/F'))!.slice(2) + '.exe';
+        const bytes = Buffer.alloc(2048);
+        if (args.includes('/DTargetArchitecture=x64')) bytes.write('MZ');
+        writeFileSync(path.join(output, name), bytes);
+      },
+    ),
+  ).rejects.toThrow('Invalid installer executable: AstMatrix-Illustrator-0.1.2-aarch64-Setup.exe');
+});
 
 function zip(entries: [string, string][], method = 8) {
   const locals: Buffer[] = [];
@@ -275,7 +346,7 @@ it('shares release manifest version validation with manual builds', async () => 
   await expect(releaseVersion(directory)).rejects.toThrow('version mismatch');
 });
 
-it('assembles exactly five release assets and rejects mismatched installer payloads', async () => {
+it('assembles exactly seven release assets and rejects missing architectures or mismatched payloads', async () => {
   const directory = await temporary();
   const packages = path.join(directory, 'packages');
   const installers = path.join(directory, 'installers');
@@ -284,7 +355,9 @@ it('assembles exactly five release assets and rejects mismatched installer paylo
   await mkdir(installers);
   const version = '0.1.2';
   const archives = ['Illustrator', 'Photoshop', 'Figma'].map((host) => archiveName(host, version));
-  const exes = ['Illustrator', 'Photoshop'].map((host) => installerName(host, version));
+  const exes = ['Illustrator', 'Photoshop'].flatMap((host) =>
+    installerArchitectures.map((architecture) => installerName(host, version, architecture)),
+  );
   const bytes = Buffer.from('fixture only');
   for (const name of archives) await writeFile(path.join(packages, name), bytes);
   for (const name of exes) await writeFile(path.join(installers, name), bytes);
@@ -303,6 +376,20 @@ it('assembles exactly five release assets and rejects mismatched installer paylo
   await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
   await assembleRelease(packages, installers, output, version, 'abc');
   expect((await readdir(output)).sort()).toEqual([...archives, ...exes].sort());
+  const completeArtifacts = installerInfo.artifacts;
+  installerInfo.artifacts = completeArtifacts.filter((entry) => !entry.name.includes('-aarch64-'));
+  await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
+  await expect(assembleRelease(packages, installers, output, version, 'abc')).rejects.toThrow(
+    'Installer architecture set mismatch',
+  );
+  installerInfo.artifacts = completeArtifacts;
+  const armName = installerName('Photoshop', version, 'aarch64');
+  await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
+  await writeFile(path.join(installers, armName), 'tampered ARM installer');
+  await expect(assembleRelease(packages, installers, output, version, 'abc')).rejects.toThrow(
+    `Artifact hash mismatch: ${armName}`,
+  );
+  await writeFile(path.join(installers, armName), bytes);
   installerInfo.payloadArtifacts = [];
   await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
   await expect(assembleRelease(packages, installers, output, version, 'abc')).rejects.toThrow(

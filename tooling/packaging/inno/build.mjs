@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import {
   archiveName,
   installerName,
+  installerArchitectures,
   releaseVersion,
   sourceCommit,
   verifyInventory,
@@ -17,27 +18,54 @@ import { readZip } from './zip.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
+export async function compilePayloadInstallers(
+  iscc,
+  host,
+  version,
+  payload,
+  archive,
+  output,
+  execute = execFileSync,
+) {
+  const names = [];
+  for (const architecture of installerArchitectures) {
+    const name = installerName(host, version, architecture);
+    execute(
+      iscc,
+      [
+        `/DAppVersion=${version}`,
+        `/DTargetArchitecture=${architecture}`,
+        `/DPayloadDir=${payload}`,
+        `/DArchivePath=${archive}`,
+        `/O${output}`,
+        `/F${name.slice(0, -4)}`,
+        path.join(here, `${host.toLowerCase()}.iss`),
+      ],
+      { stdio: 'inherit' },
+    );
+    const executable = await readFile(path.join(output, name));
+    assert(
+      executable.length > 1024 && executable.toString('ascii', 0, 2) === 'MZ',
+      `Invalid installer executable: ${name}`,
+    );
+    names.push(name);
+  }
+  return names;
+}
+
 export function checkCompilerVersion(iscc, execute = execFileSync) {
-  // ISCC.exe's PE ProductVersion can be 0.0.0.0. Inno 6 has no --version,
-  // and /? only prints the major version. A no-output compile loads ISCmplr.dll
-  // and reports the actual engine version (including the patch component).
-  const output = execute(iscc, ['/O-', '-'], {
+  // Inno 7.1's --version loads the compiler engine and prints its exact version.
+  // Do not rely on the ISCC.exe PE resource or the major-version help banner.
+  const version = execute(iscc, ['--version'], {
     encoding: 'utf8',
-    input: [
-      '[Setup]',
-      'AppName=AstMatrix Compiler Probe',
-      'AppVersion=0.0.0',
-      'DefaultDirName={tmp}\\AstMatrix-Compiler-Probe',
-      'CreateAppDir=no',
-      'Uninstallable=no',
-      'Output=no',
-      '',
-    ].join('\n'),
-  });
-  const match = output.match(/^Compiler engine version:[^\r\n]*?\b(\d+\.\d+\.\d+)(?:\s|$)/m);
-  assert(match, `ISCC did not report its compiler engine version:\n${output}`);
-  assert.equal(match[1], '6.7.4', 'Expected Inno Setup compiler engine 6.7.4');
-  return match[1];
+  }).trim();
+  assert.match(
+    version,
+    /^\d+\.\d+\.\d+$/,
+    `ISCC did not report its compiler engine version:\n${version}`,
+  );
+  assert.equal(version, '7.1.1', 'Expected Inno Setup compiler engine 7.1.1');
+  return version;
 }
 
 export function validatePayload(host, files, version) {
@@ -129,6 +157,7 @@ async function main() {
   console.log(`Verified Inno Setup compiler engine ${compilerVersion}`);
   await mkdir(output, { recursive: true });
   const stage = await mkdtemp(path.join(output, '.stage-'));
+  const names = [];
   try {
     for (const host of ['Illustrator', 'Photoshop']) {
       const archive = path.join(input, archiveName(host, version));
@@ -148,30 +177,15 @@ async function main() {
           2,
         ),
       );
-      execFileSync(
-        iscc,
-        [
-          `/DAppVersion=${version}`,
-          `/DPayloadDir=${payload}`,
-          `/DArchivePath=${archive}`,
-          `/O${output}`,
-          `/F${installerName(host, version).slice(0, -4)}`,
-          path.join(here, `${host.toLowerCase()}.iss`),
-        ],
-        { stdio: 'inherit' },
-      );
-      const executable = await readFile(path.join(output, installerName(host, version)));
-      assert(
-        executable.length > 1024 && executable.toString('ascii', 0, 2) === 'MZ',
-        'Invalid installer executable',
+      names.push(
+        ...(await compilePayloadInstallers(iscc, host, version, payload, archive, output)),
       );
     }
-    const info = await writeInventory(
-      output,
-      'installer-info.json',
-      ['Illustrator', 'Photoshop'].map((host) => installerName(host, version)),
-      { compilerVersion, payloadArtifacts: inventory.artifacts },
-    );
+    const info = await writeInventory(output, 'installer-info.json', names, {
+      compilerVersion,
+      architectures: installerArchitectures,
+      payloadArtifacts: inventory.artifacts,
+    });
     await writeFile(
       path.join(output, 'SHA256SUMS.txt'),
       info.artifacts.map((entry) => `${entry.sha256}  ${entry.name}`).join('\n') + '\n',

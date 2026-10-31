@@ -83,9 +83,23 @@ jobs:
           payload-artifact: release-payload-${{ needs.prepare.outputs.version }}
           installer-artifact: release-installers-${{ needs.prepare.outputs.version }}
 
+  installers-arm64:
+    name: Verify Windows ARM64 installers
+    needs: [prepare, installers]
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/test-inno-arm64
+        with:
+          installer-artifact: release-installers-${{ needs.prepare.outputs.version }}
+
   publish:
     name: Verify and publish release
-    needs: [prepare, installers]
+    needs: [prepare, installers, installers-arm64]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -106,7 +120,7 @@ jobs:
         with:
           name: release-installers-${{ needs.prepare.outputs.version }}
           path: tmp/release-installers
-      - name: Verify all five assets and their provenance
+      - name: Verify all seven assets and their provenance
         run: node tooling/packaging/verify-release.mjs
       - name: Upload complete release artifact
         uses: actions/upload-artifact@v7

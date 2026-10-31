@@ -1,0 +1,27 @@
+name: Test Inno Setup on Windows ARM64
+description: Verify the compiled aarch64 installers and isolated upgrade fixtures on ARM64 Windows.
+inputs:
+  installer-artifact:
+    description: Artifact containing all four installers from the same commit
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.installer-artifact }}
+        path: tmp/inno-output
+    - name: Install pinned compiler for upgrade fixtures
+      shell: pwsh
+      run: ./tooling/packaging/inno/install-compiler.ps1
+    - name: Runtime and ARM64 installer smoke tests
+      shell: powershell
+      run: ./tooling/packaging/inno/runtime.tests.ps1 -InstallerDirectory tmp/inno-output -Architecture aarch64
+    - name: Upload ARM64 diagnostics
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.installer-artifact }}-arm64-diagnostics
+        path: tmp/inno-tests/
+        retention-days: 30
+        if-no-files-found: ignore

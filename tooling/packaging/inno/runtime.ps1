@@ -1,12 +1,16 @@
-# Windows PowerShell 5.1; dot-sourceable for isolated runtime tests.
+﻿# Windows PowerShell 5.1; dot-sourceable for isolated runtime tests.
 param(
-  [ValidateSet('preflight', 'install', 'uninstall')][string]$Operation,
+  [ValidateSet('preflight', 'install', 'uninstall', 'shortcuts')][string]$Operation,
   [ValidateSet('Illustrator', 'Photoshop')][string]$HostName,
   [string]$AppVersion,
   [string]$ManagerDir,
   [string]$PayloadDir,
   [string]$ArchivePath,
-  [string]$ResultPath
+  [string]$ResultPath,
+  [switch]$ValidateRegistration,
+  [string]$RegisteredVersion,
+  [string]$UninstallerPath,
+  [switch]$DisableCepDeveloperMode
 )
 
 Set-StrictMode -Version Latest
@@ -28,6 +32,75 @@ function Get-State {
 function Get-PluginDestination($Version) {
   if ($HostName -eq 'Illustrator') { return Join-Path $env:APPDATA 'Adobe\CEP\extensions\AstMatrix' }
   return Join-Path $env:APPDATA "Adobe\UXP\Plugins\External\1f4db629_$Version"
+}
+
+function Assert-Registration($State) {
+  if (!$ValidateRegistration) { return }
+  if ($RegisteredVersion) {
+    if (!$State -or $State.version -ne $RegisteredVersion) { throw 'Inno registration and plugin state disagree. Repair or uninstall the previous installation before retrying.' }
+  } elseif ($State) { throw 'Plugin state exists without an Inno registration. Refusing to overwrite an unregistered installation.' }
+}
+
+function Get-ShortcutRecord {
+  $file = Join-Path $ManagerDir 'uninstall-shortcut.json'
+  if (Test-Path -LiteralPath $file) { return Get-Content -LiteralPath $file -Raw -Encoding UTF8 | ConvertFrom-Json }
+  return $null
+}
+
+function Get-ShortcutPath($Directory) {
+  return Get-SafeFilePath $Directory '卸载 AstMatrix.lnk'
+}
+
+function Remove-UninstallShortcut($Record) {
+  if (!$Record) { return }
+  $file = Get-ShortcutPath $Record.directory
+  if ((Test-Path -LiteralPath $file) -and (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -eq $Record.sha256) {
+    Remove-Item -LiteralPath $file
+    if (!@(Get-ChildItem -LiteralPath $Record.directory -Force).Count) { Remove-Item -LiteralPath $Record.directory }
+  }
+}
+
+function Write-UninstallShortcut($Path) {
+  $shell = New-Object -ComObject WScript.Shell
+  try {
+    $shortcut = $shell.CreateShortcut($Path)
+    $shortcut.TargetPath = $UninstallerPath
+    $shortcut.WorkingDirectory = $ManagerDir
+    $shortcut.Description = "Uninstall AstMatrix for $HostName"
+    $shortcut.Save()
+  } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($shell) }
+}
+
+function Install-UninstallShortcut($State) {
+  if (!$State) { throw 'Cannot create an uninstall shortcut without plugin state.' }
+  $directory = if ($State.mode -eq 'upia') { $State.pluginPath } else { $State.path }
+  if (!(Test-Path -LiteralPath $directory -PathType Container)) { throw 'The installed plugin directory is missing.' }
+  if ((Split-Path -Parent $UninstallerPath) -ne $ManagerDir -or !(Test-Path -LiteralPath $UninstallerPath -PathType Leaf)) { throw 'The Inno uninstaller is missing or outside the management directory.' }
+  $previous = Get-ShortcutRecord
+  $file = Get-ShortcutPath $directory
+  $exists = Test-Path -LiteralPath $file
+  if ($exists -and (!$previous -or $previous.directory -ne $directory -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $previous.sha256)) { throw 'An unowned or modified uninstall shortcut already exists.' }
+  $backup = if ($exists) { [IO.File]::ReadAllBytes($file) } else { $null }
+  try {
+    Write-UninstallShortcut $file
+    $record = @{ directory = $directory; sha256 = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash }
+    Write-JsonFile (Join-Path $ManagerDir 'uninstall-shortcut.json') $record
+  } catch {
+    if ($exists) { [IO.File]::WriteAllBytes($file, $backup) }
+    elseif (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file }
+    throw
+  }
+  if ($previous -and $previous.directory -ne $directory) { Remove-UninstallShortcut $previous }
+}
+
+function Disable-CepDeveloperMode {
+  foreach ($cep in @(11, 12)) {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Software\Adobe\CSXS.$cep", $true)
+    if (!$key) { continue }
+    try {
+      if ($key.GetValueNames() -contains 'PlayerDebugMode') { $key.SetValue('PlayerDebugMode', '0', [Microsoft.Win32.RegistryValueKind]::String) }
+    } finally { $key.Dispose() }
+  }
 }
 
 function Assert-NoHostProcess {
@@ -347,11 +420,20 @@ function Invoke-Installer {
     Assert-NoHostProcess
     $state = Get-State
     Assert-State $state
+    if ($DisableCepDeveloperMode -and ($Operation -ne 'uninstall' -or $HostName -ne 'Illustrator')) { throw 'DisableCepDeveloperMode is only supported for Illustrator uninstall.' }
     if ($Operation -eq 'uninstall') {
       Uninstall-Plugin $state
+      if ($DisableCepDeveloperMode) { Disable-CepDeveloperMode }
+      Remove-UninstallShortcut (Get-ShortcutRecord)
+      Remove-Item -LiteralPath (Join-Path $ManagerDir 'uninstall-shortcut.json') -ErrorAction SilentlyContinue
       Remove-Item -LiteralPath (Join-Path $ManagerDir 'state.json') -ErrorAction SilentlyContinue
       return
     }
+    if ($Operation -eq 'shortcuts') {
+      Install-UninstallShortcut $state
+      return
+    }
+    Assert-Registration $state
     $compatibility = Test-HostCompatibility
     if ($state -and [version]$state.version -gt [version]$AppVersion) { throw 'A newer installer version is already installed; downgrade is not supported.' }
     if ($Operation -eq 'preflight') {
@@ -364,6 +446,10 @@ function Invoke-Installer {
   } catch {
     Write-Host "ERROR: $($_.Exception.Message)"
     Write-Host $_.ScriptStackTrace
+    if ($ResultPath) {
+      try { [IO.File]::WriteAllText($ResultPath, ("[result]`r`nerror=" + ($_.Exception.Message -replace '[\r\n]', ' ') + "`r`n"), [Text.Encoding]::Unicode) }
+      catch { Write-Host 'Could not write the installer error summary.' }
+    }
     throw
   } finally {
     if ($transcribing) { Stop-Transcript | Out-Null }

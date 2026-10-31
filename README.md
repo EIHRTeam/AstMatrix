@@ -179,7 +179,7 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 **Windows installer (.exe)**
 
-1. Download `AstMatrix-Illustrator-<version>-Setup.exe` from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest), close Illustrator, and run it on Windows 10/11 x64.
+1. Download `AstMatrix-Illustrator-<version>-Setup.exe` for Windows x64, or `AstMatrix-Illustrator-<version>-aarch64-Setup.exe` for Windows ARM64, from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest). Close Illustrator and run the matching installer on Windows 10/11.
 2. The installer deploys the extension for the current user and enables the shared CEP 11/12 `PlayerDebugMode` settings (`REG_SZ`, `1`). These settings are retained on uninstall so other unsigned extensions keep working.
 3. Restart Illustrator and select "Window" > "Extensions" > "AstMatrix". Supported Illustrator versions are 27.x through 30.9.x.
 
@@ -221,7 +221,7 @@ Upgrade by running a newer installer. Remove it through Windows Installed apps. 
 
 **Windows installer (.exe)**
 
-1. Download `AstMatrix-Photoshop-<version>-Setup.exe` from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest), close Photoshop, and run it on Windows 10/11 x64. This package requires Photoshop 26.0 or later and its Adobe WebView dependencies.
+1. Download `AstMatrix-Photoshop-<version>-Setup.exe` for Windows x64, or `AstMatrix-Photoshop-<version>-aarch64-Setup.exe` for Windows ARM64, from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest). Close Photoshop and run the matching installer on Windows 10/11. This package requires Photoshop 26.0 or later and its Adobe WebView dependencies.
 2. Setup first uses the existing Adobe Unified Plugin Installer Agent (UPIA). If UPIA is missing, cannot start, or reports a recognized environment failure, setup attempts **experimental extraction** into a versioned plugin directory. It does not edit Adobe's internal plugin registration JSON.
 3. Restart Photoshop and check "Plugins" > "AstMatrix". **Extraction confirms file deployment only; Photoshop loading is not verified.** Cancelled, incompatible, invalid-package, conflicting-installation, and unresolved UPIA operations do not trigger extraction.
 

@@ -9,7 +9,15 @@ export const repository = fileURLToPath(new URL('../..', import.meta.url));
 export const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 export const archiveName = (host, version) =>
   `AstMatrix-${host}-${version}.${host === 'Photoshop' ? 'ccx' : 'zip'}`;
-export const installerName = (host, version) => `AstMatrix-${host}-${version}-Setup.exe`;
+export const installerArchitectures = Object.freeze(['x64', 'aarch64']);
+export function installerName(host, version, architecture = 'x64') {
+  assert(
+    installerArchitectures.includes(architecture),
+    `Unsupported installer architecture: ${architecture}`,
+  );
+  // Keep existing x64 download names stable.
+  return `AstMatrix-${host}-${version}${architecture === 'x64' ? '' : `-${architecture}`}-Setup.exe`;
+}
 
 export async function releaseVersion(root = repository) {
   const { version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));

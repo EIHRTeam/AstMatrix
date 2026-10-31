@@ -10,8 +10,8 @@
  *   astmatrix-illustrator.zxp      CEP, may contain web/cep11 + web/cep12
  *   astmatrix-photoshop.ccx        UXP, manifest v5, host.minVersion >= Photoshop 24.x
  *   astmatrix-affinity/            Affinity script bundle distributed per SDK support
- *   AstMatrix-Illustrator-<version>-Setup.exe   Windows Inno Setup installer
- *   AstMatrix-Photoshop-<version>-Setup.exe     Windows Inno Setup installer
+ *   AstMatrix-Illustrator-<version>[-aarch64]-Setup.exe   Windows Inno Setup installers
+ *   AstMatrix-Photoshop-<version>[-aarch64]-Setup.exe     Windows Inno Setup installers
  *
  * Actual ZIP/CCX releases use prepare.mjs; Windows installers use inno/build.mjs.
  * This command remains a packaging-plan display, including planned signed ZXP artifacts.
@@ -23,6 +23,7 @@
  */
 
 import process from 'node:process';
+import { installerArchitectures, installerName } from './artifacts.mjs';
 
 const PLANNED_ARTIFACTS = [
   {
@@ -90,20 +91,16 @@ const PLANNED_ARTIFACTS = [
       'licenses/',
     ],
   },
-  {
-    name: 'AstMatrix-Illustrator-<version>-Setup.exe',
-    target: 'windows-inno-illustrator',
-    contents: ['Illustrator ZIP payload', 'per-user installer controller'],
-  },
-  {
-    name: 'AstMatrix-Photoshop-<version>-Setup.exe',
-    target: 'windows-inno-photoshop',
-    contents: [
-      'Photoshop enhanced CCX',
-      'UPIA-first controller',
-      'experimental extraction payload',
-    ],
-  },
+  ...['Illustrator', 'Photoshop'].flatMap((host) =>
+    installerArchitectures.map((architecture) => ({
+      name: installerName(host, '<version>', architecture),
+      target: `windows-inno-${host.toLowerCase()}-${architecture}`,
+      contents:
+        host === 'Illustrator'
+          ? ['Illustrator ZIP payload', 'per-user installer controller']
+          : ['Photoshop enhanced CCX', 'UPIA-first controller', 'experimental extraction payload'],
+    })),
+  ),
   {
     name: 'astmatrix-affinity/',
     target: 'affinity-script',

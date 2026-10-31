@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   archiveName,
   installerName,
+  installerArchitectures,
   releaseVersion,
   sourceCommit,
   verifyInventory,
@@ -25,9 +26,15 @@ export async function assembleRelease(
     await readFile(path.join(installerDirectory, 'installer-info.json'), 'utf8'),
   );
   const archives = ['Illustrator', 'Photoshop', 'Figma'].map((host) => archiveName(host, version));
-  const exes = ['Illustrator', 'Photoshop'].map((host) => installerName(host, version));
+  const exes = ['Illustrator', 'Photoshop'].flatMap((host) =>
+    installerArchitectures.map((architecture) => installerName(host, version, architecture)),
+  );
   assert.deepEqual(payload.artifacts.map((entry) => entry.name).sort(), [...archives].sort());
-  assert.deepEqual(installers.artifacts.map((entry) => entry.name).sort(), [...exes].sort());
+  assert.deepEqual(
+    installers.artifacts.map((entry) => entry.name).sort(),
+    [...exes].sort(),
+    'Installer architecture set mismatch',
+  );
   assert.deepEqual(
     installers.payloadArtifacts,
     payload.artifacts,

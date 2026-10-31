@@ -11,7 +11,12 @@ export interface Inventory {
 export const repository: string;
 export function digest(bytes: Uint8Array): string;
 export function archiveName(host: string, version: string): string;
-export function installerName(host: string, version: string): string;
+export const installerArchitectures: readonly ['x64', 'aarch64'];
+export function installerName(
+  host: string,
+  version: string,
+  architecture?: 'x64' | 'aarch64',
+): string;
 export function releaseVersion(root?: string): Promise<string>;
 export function sourceCommit(): string;
 export function verifyInventory(

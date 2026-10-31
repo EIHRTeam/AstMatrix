@@ -61,3 +61,17 @@ jobs:
         with:
           payload-artifact: inno-payload-${{ needs.prepare.outputs.version }}
           installer-artifact: AstMatrix-Windows-Installers-${{ needs.prepare.outputs.version }}
+
+  installers-arm64:
+    name: Verify Windows ARM64 installers
+    needs: [prepare, installers]
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/test-inno-arm64
+        with:
+          installer-artifact: AstMatrix-Windows-Installers-${{ needs.prepare.outputs.version }}
