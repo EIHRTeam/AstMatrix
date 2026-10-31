@@ -118,8 +118,10 @@ cancelled dialogs, failed removal, and explicit CEP disable using Windows UI Aut
 Both languages run on each architecture, including switching languages during reinstall and
 checking the uninstaller's saved language. Catalog tests check translation coverage and
 interpolation placeholders; local PowerShell tests cover old-record and localized-name migration.
-Windows runtime tests also exercise the real shortcut adapter with Unicode paths and descriptions;
-upgrade tests check failure exit codes and recovery when a foreign shortcut blocks a language switch.
+Windows runtime tests also exercise the real shortcut adapter with Unicode paths and descriptions.
+An independent `IShellLinkW` reader inspects the original localized links without WScript's
+ANSI conversion, and value mismatches report both expected and actual contents.
+Upgrade tests check failure exit codes and recovery when a foreign shortcut blocks a language switch.
 The legacy script fixture preserves the pre-upgrade installation format and lack of shortcuts;
 its OS gate is parameterized for testing that state layout on ARM64 too, and its system
 process launch is adapted to Inno 7's native-system API.

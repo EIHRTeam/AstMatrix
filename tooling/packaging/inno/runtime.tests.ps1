@@ -19,6 +19,66 @@ function Assert-InstallerError([scriptblock]$Action, $Key) {
   Assert ($caught.Exception.Data['InstallerError'] -eq $Key) "stable localization key $Key"
 }
 
+function Read-TestShortcut($Path) {
+  # Keep this independent reader in the tests. WScript can convert Unicode targets
+  # even when the .lnk itself is loaded from an ASCII path.
+  if (!('AstMatrix.Tests.ShortcutReader' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Text;
+
+namespace AstMatrix.Tests {
+  [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+  internal class ShellLink { }
+
+  [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  internal interface IShellLinkW {
+    // Preserve vtable order through the last method used by this reader.
+    void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int count, IntPtr data, uint flags);
+    void GetIDList(out IntPtr idList);
+    void SetIDList(IntPtr idList);
+    void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder description, int count);
+    void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string description);
+    void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder directory, int count);
+  }
+
+  public class ShortcutDetails {
+    public string TargetPath;
+    public string WorkingDirectory;
+    public string Description;
+  }
+
+  public static class ShortcutReader {
+    public static ShortcutDetails Read(string path) {
+      object instance = new ShellLink();
+      try {
+        ((IPersistFile)instance).Load(path, 0);
+        IShellLinkW link = (IShellLinkW)instance;
+        StringBuilder target = new StringBuilder(32768);
+        StringBuilder directory = new StringBuilder(32768);
+        StringBuilder description = new StringBuilder(32768);
+        // SLGP_RAWPATH reads the stored target without resolving the link.
+        link.GetPath(target, target.Capacity, IntPtr.Zero, 4);
+        link.GetWorkingDirectory(directory, directory.Capacity);
+        link.GetDescription(description, description.Capacity);
+        return new ShortcutDetails {
+          TargetPath = target.ToString(),
+          WorkingDirectory = directory.ToString(),
+          Description = description.ToString()
+        };
+      } finally {
+        Marshal.ReleaseComObject(instance);
+      }
+    }
+  }
+}
+'@
+  }
+  return [AstMatrix.Tests.ShortcutReader]::Read($Path)
+}
+
 $root = Join-Path ([IO.Path]::GetTempPath()) ('astmatrix-tests-' + [guid]::NewGuid())
 $originalAppData = $env:APPDATA
 $originalCommon = $env:CommonProgramFiles
@@ -66,29 +126,20 @@ try {
       [IO.Directory]::CreateDirectory($directory) | Out-Null
       $shortcutState = @{ mode = 'extracted'; path = $directory }
       $ShortcutDescription = '卸载 AstMatrix for Photoshop'
-      $wscript = New-Object -ComObject WScript.Shell
-      $inspectionPath = Join-Path $root 'inspect-shortcut.lnk'
-      try {
-        foreach ($ShortcutName in @('Uninstall AstMatrix.lnk', '卸载 AstMatrix.lnk')) {
-          Install-UninstallShortcut $shortcutState
-          $link = Get-ShortcutPath $directory $ShortcutName
-          Assert (Test-Path -LiteralPath $link) 'native adapter saves a localized shortcut in a Unicode directory'
-          Assert ((Get-ShortcutRecord).sha256 -eq (Get-FileHash -LiteralPath $link).Hash) 'native shortcut is inventoried'
-          # WScript also uses ANSI paths when loading. Inspect a copy at an ASCII path.
-          Copy-Item -LiteralPath $link -Destination $inspectionPath -Force
-          $shortcut = $wscript.CreateShortcut($inspectionPath)
-          Assert ($shortcut.TargetPath -eq $UninstallerPath) 'native shortcut preserves the Unicode target'
-          Assert ($shortcut.WorkingDirectory -eq $ManagerDir) 'native shortcut preserves the Unicode working directory'
-          Assert ($shortcut.Description -eq $ShortcutDescription) 'native shortcut preserves the localized description'
-        }
-        Assert (!(Test-Path (Get-ShortcutPath $directory 'Uninstall AstMatrix.lnk'))) 'native language switch removes the previous link'
-        Remove-UninstallShortcut (Get-ShortcutRecord)
-        Assert (!(Test-Path -LiteralPath $directory)) 'native shortcut removal cleans its empty directory'
-        Assert-Throws { Write-UninstallShortcut (Join-Path $directory 'missing.lnk') } 'native save errors propagate'
-      } finally {
-        [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript)
-        if (Test-Path -LiteralPath $inspectionPath) { Remove-Item -LiteralPath $inspectionPath }
+      foreach ($ShortcutName in @('Uninstall AstMatrix.lnk', '卸载 AstMatrix.lnk')) {
+        Install-UninstallShortcut $shortcutState
+        $link = Get-ShortcutPath $directory $ShortcutName
+        Assert (Test-Path -LiteralPath $link) 'native adapter saves a localized shortcut in a Unicode directory'
+        Assert ((Get-ShortcutRecord).sha256 -eq (Get-FileHash -LiteralPath $link).Hash) 'native shortcut is inventoried'
+        $shortcut = Read-TestShortcut $link
+        Assert ($shortcut.TargetPath -eq $UninstallerPath) "native shortcut preserves the Unicode target (expected '$UninstallerPath', actual '$($shortcut.TargetPath)')"
+        Assert ($shortcut.WorkingDirectory -eq $ManagerDir) "native shortcut preserves the Unicode working directory (expected '$ManagerDir', actual '$($shortcut.WorkingDirectory)')"
+        Assert ($shortcut.Description -eq $ShortcutDescription) "native shortcut preserves the localized description (expected '$ShortcutDescription', actual '$($shortcut.Description)')"
       }
+      Assert (!(Test-Path (Get-ShortcutPath $directory 'Uninstall AstMatrix.lnk'))) 'native language switch removes the previous link'
+      Remove-UninstallShortcut (Get-ShortcutRecord)
+      Assert (!(Test-Path -LiteralPath $directory)) 'native shortcut removal cleans its empty directory'
+      Assert-Throws { Write-UninstallShortcut (Join-Path $directory 'missing.lnk') } 'native save errors propagate'
     }
   }
 
