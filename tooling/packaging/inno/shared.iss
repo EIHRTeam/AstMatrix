@@ -150,16 +150,21 @@ begin
 end;
 
 procedure InitializeWizard();
+var
+  WelcomeText, Requirements: String;
 begin
 #if HostName == "Illustrator"
-  WizardForm.WelcomeLabel2.Caption := CustomMessage('WelcomeIllustrator');
+  Requirements := CustomMessage('WelcomeIllustrator');
 #else
-  WizardForm.WelcomeLabel2.Caption := CustomMessage('WelcomePhotoshop');
+  Requirements := CustomMessage('WelcomePhotoshop');
 #endif
-  if RegisteredVersion <> '' then begin
-    WizardForm.WelcomeLabel1.Caption := FmtMessage(CustomMessage('UpdateTitle'), ['{#HostName}']);
-    WizardForm.WelcomeLabel2.Caption := FmtMessage(CustomMessage('UpdateIntro'), [RegisteredVersion, '{#AppVersion}']) + #13#10#13#10 + WizardForm.WelcomeLabel2.Caption;
-  end;
+  if RegisteredVersion <> '' then
+    Requirements := FmtMessage(CustomMessage('UpdateIntro'), [RegisteredVersion, '{#AppVersion}']) + #13#10#13#10 + Requirements;
+  { Keep Inno's localized welcome text and insert plugin details before its navigation hint. }
+  WelcomeText := WizardForm.WelcomeLabel2.Caption;
+  StringChangeEx(WelcomeText, SetupMessage(msgClickNext),
+    Requirements + #13#10#13#10 + SetupMessage(msgClickNext), False);
+  WizardForm.WelcomeLabel2.Caption := WelcomeText;
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
@@ -239,13 +244,13 @@ begin
     ContinueButton := TNewButton.Create(Form);
     ContinueButton.Parent := Form;
     ContinueButton.SetBounds(ScaleX(180), ScaleY(145), ScaleX(160), ScaleY(25));
-    ContinueButton.Caption := CustomMessage('ContinueUninstall');
+    ContinueButton.Caption := SetupMessage(msgButtonOK);
     ContinueButton.ModalResult := mrOk;
     ContinueButton.Default := True;
     CancelButton := TNewButton.Create(Form);
     CancelButton.Parent := Form;
     CancelButton.SetBounds(ScaleX(350), ScaleY(145), ScaleX(90), ScaleY(25));
-    CancelButton.Caption := CustomMessage('Cancel');
+    CancelButton.Caption := SetupMessage(msgButtonCancel);
     CancelButton.ModalResult := mrCancel;
     CancelButton.Cancel := True;
     Result := Form.ShowModal() = mrOk;

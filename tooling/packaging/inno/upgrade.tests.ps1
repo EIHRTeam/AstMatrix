@@ -8,9 +8,9 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 $ui = if ($Language -eq 'english') {
-  @{ Checkbox = 'Disable CEP developer mode'; Cancel = 'Cancel'; Continue = 'Continue uninstall'; StartMenu = 'Uninstall AstMatrix for'; PluginLink = 'Uninstall AstMatrix.lnk' }
+  @{ Checkbox = 'Disable CEP developer mode'; Cancel = 'Cancel'; Continue = 'OK'; StartMenu = 'Uninstall AstMatrix for'; PluginLink = 'Uninstall AstMatrix.lnk' }
 } else {
-  @{ Checkbox = '关闭 CEP 开发者模式'; Cancel = '取消'; Continue = '继续卸载'; StartMenu = '卸载 AstMatrix for'; PluginLink = '卸载 AstMatrix.lnk' }
+  @{ Checkbox = '关闭 CEP 开发者模式'; Cancel = '取消'; Continue = '确定'; StartMenu = '卸载 AstMatrix for'; PluginLink = '卸载 AstMatrix.lnk' }
 }
 $otherLanguage = if ($Language -eq 'english') { 'chinesesimplified' } else { 'english' }
 $otherStartMenu = if ($Language -eq 'english') { '卸载 AstMatrix for' } else { 'Uninstall AstMatrix for' }

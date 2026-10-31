@@ -25,8 +25,9 @@ it('provides both translations with matching interpolation placeholders', async 
     const chinese = chinesesimplified.get(key)!;
     expect(value, `english.${key}`).not.toBe('');
     expect(chinese, `chinesesimplified.${key}`).not.toBe('');
-    expect(chinese.match(/%(?:\d+|n)/g)?.sort() ?? [], `placeholders: ${key}`).toEqual(
-      value.match(/%(?:\d+|n)/g)?.sort() ?? [],
+    // Paragraph breaks may differ by language; substitution arguments must match.
+    expect(chinese.match(/%\d+/g)?.sort() ?? [], `placeholders: ${key}`).toEqual(
+      value.match(/%\d+/g)?.sort() ?? [],
     );
   }
 });
