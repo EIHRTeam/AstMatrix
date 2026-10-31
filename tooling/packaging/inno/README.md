@@ -92,6 +92,9 @@ integrity checks. Upgrades migrate the shortcut and remove an unchanged old entr
 or modified plugin shortcuts are preserved. Language switches also migrate the shortcut
 name; old Start menu entries are removed only if they target this installation's uninstaller
 without extra arguments. Legacy state without a shortcut record or localized file name is supported.
+The plugin shortcut uses Unicode Shell interfaces so its path, target and description do not
+depend on the Windows ANSI code page. A shortcut failure after Inno commits the installation
+returns a nonzero setup exit code; the committed installation remains available for repair or removal.
 Plugin removal runs only after uninstall confirmation. A controller failure stops Inno
 cleanup, retaining state and uninstall entry points for retry or diagnosis.
 
@@ -115,6 +118,8 @@ cancelled dialogs, failed removal, and explicit CEP disable using Windows UI Aut
 Both languages run on each architecture, including switching languages during reinstall and
 checking the uninstaller's saved language. Catalog tests check translation coverage and
 interpolation placeholders; local PowerShell tests cover old-record and localized-name migration.
+Windows runtime tests also exercise the real shortcut adapter with Unicode paths and descriptions;
+upgrade tests check failure exit codes and recovery when a foreign shortcut blocks a language switch.
 The legacy script fixture preserves the pre-upgrade installation format and lack of shortcuts;
 its OS gate is parameterized for testing that state layout on ARM64 too, and its system
 process launch is adapted to Inno 7's native-system API.

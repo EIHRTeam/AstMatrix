@@ -56,6 +56,42 @@ try {
     Assert-InstallerError { Assert-Registration ([pscustomobject]@{ version = '0.1.2' }) } 'ErrRegistrationConflict'
   }
 
+  if ($windows) {
+    & {
+      $ManagerDir = Join-Path $root 'Unicode manager 测试'
+      [IO.Directory]::CreateDirectory($ManagerDir) | Out-Null
+      $UninstallerPath = Join-Path $ManagerDir 'unins000.exe'
+      [IO.File]::WriteAllText($UninstallerPath, 'uninstaller fixture')
+      $directory = Join-Path $env:APPDATA 'Unicode plugin 测试'
+      [IO.Directory]::CreateDirectory($directory) | Out-Null
+      $shortcutState = @{ mode = 'extracted'; path = $directory }
+      $ShortcutDescription = '卸载 AstMatrix for Photoshop'
+      $wscript = New-Object -ComObject WScript.Shell
+      $inspectionPath = Join-Path $root 'inspect-shortcut.lnk'
+      try {
+        foreach ($ShortcutName in @('Uninstall AstMatrix.lnk', '卸载 AstMatrix.lnk')) {
+          Install-UninstallShortcut $shortcutState
+          $link = Get-ShortcutPath $directory $ShortcutName
+          Assert (Test-Path -LiteralPath $link) 'native adapter saves a localized shortcut in a Unicode directory'
+          Assert ((Get-ShortcutRecord).sha256 -eq (Get-FileHash -LiteralPath $link).Hash) 'native shortcut is inventoried'
+          # WScript also uses ANSI paths when loading. Inspect a copy at an ASCII path.
+          Copy-Item -LiteralPath $link -Destination $inspectionPath -Force
+          $shortcut = $wscript.CreateShortcut($inspectionPath)
+          Assert ($shortcut.TargetPath -eq $UninstallerPath) 'native shortcut preserves the Unicode target'
+          Assert ($shortcut.WorkingDirectory -eq $ManagerDir) 'native shortcut preserves the Unicode working directory'
+          Assert ($shortcut.Description -eq $ShortcutDescription) 'native shortcut preserves the localized description'
+        }
+        Assert (!(Test-Path (Get-ShortcutPath $directory 'Uninstall AstMatrix.lnk'))) 'native language switch removes the previous link'
+        Remove-UninstallShortcut (Get-ShortcutRecord)
+        Assert (!(Test-Path -LiteralPath $directory)) 'native shortcut removal cleans its empty directory'
+        Assert-Throws { Write-UninstallShortcut (Join-Path $directory 'missing.lnk') } 'native save errors propagate'
+      } finally {
+        [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript)
+        if (Test-Path -LiteralPath $inspectionPath) { Remove-Item -LiteralPath $inspectionPath }
+      }
+    }
+  }
+
   & {
     $ManagerDir = Join-Path $root 'shortcut manager'
     [IO.Directory]::CreateDirectory($ManagerDir) | Out-Null
@@ -282,6 +318,7 @@ try {
         $installLanguage = if ($attempt -eq 1) { 'english' } else { 'chinesesimplified' }
         $process = Start-Process $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LANG=$installLanguage", "/DIR=`"$manager`"", "/LOG=`"$root\$hostName-$attempt.log`"") -Wait -PassThru
         Assert ($process.ExitCode -eq 0) "$hostName EXE installation $attempt"
+        Assert (Test-Path (Join-Path $manager 'uninstall-shortcut.json')) "$hostName EXE installation $attempt creates the shortcut inventory"
       }
       $record = Get-Content (Join-Path $manager 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
       Assert ($record.mode -eq 'extracted') 'host-free smoke test follows extraction path'
@@ -293,9 +330,14 @@ try {
       try {
         foreach ($link in @((Get-ShortcutPath $record.path), $startMenu)) {
           Assert (Test-Path $link) 'uninstall entry point exists'
-          Assert ($wscript.CreateShortcut($link).TargetPath -eq (Join-Path $manager 'unins000.exe')) 'entry point targets stable Inno uninstaller'
+          $inspectionPath = Join-Path $root 'inspect-shortcut.lnk'
+          Copy-Item -LiteralPath $link -Destination $inspectionPath -Force
+          Assert ($wscript.CreateShortcut($inspectionPath).TargetPath -eq (Join-Path $manager 'unins000.exe')) 'entry point targets stable Inno uninstaller'
         }
-      } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript) }
+      } finally {
+        [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript)
+        if (Test-Path -LiteralPath $inspectionPath) { Remove-Item -LiteralPath $inspectionPath }
+      }
       if ($hostName -eq 'Illustrator') {
         foreach ($cep in @(11, 12)) {
           $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Software\Adobe\CSXS.$cep")

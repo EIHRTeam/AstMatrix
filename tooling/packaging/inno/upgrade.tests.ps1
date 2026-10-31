@@ -14,6 +14,7 @@ $ui = if ($Language -eq 'english') {
 }
 $otherLanguage = if ($Language -eq 'english') { 'chinesesimplified' } else { 'english' }
 $otherStartMenu = if ($Language -eq 'english') { '卸载 AstMatrix for' } else { 'Uninstall AstMatrix for' }
+$otherPluginLink = if ($Language -eq 'english') { '卸载 AstMatrix.lnk' } else { 'Uninstall AstMatrix.lnk' }
 
 function Assert($Condition, $Message) { if (!$Condition) { throw "Assertion failed: $Message" } }
 function Run-Setup($Path, $Arguments, $Success = $true) {
@@ -147,9 +148,23 @@ SourceDir=$PSScriptRoot
     try {
       foreach ($link in @((Get-ShortcutPath $state.path $ui.PluginLink), $startMenu)) {
         Assert (Test-Path $link) 'both uninstall shortcuts created during migration'
-        Assert ($wscript.CreateShortcut($link).TargetPath -eq $uninstaller) 'shortcut targets stable uninstaller'
+        # WScript's load path is ANSI too; inspect a copy outside the Unicode tree.
+        $inspectionPath = Join-Path $root 'inspect-shortcut.lnk'
+        Copy-Item -LiteralPath $link -Destination $inspectionPath -Force
+        Assert ($wscript.CreateShortcut($inspectionPath).TargetPath -eq $uninstaller) 'shortcut targets stable uninstaller'
       }
-    } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript) }
+    } finally {
+      [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript)
+      if (Test-Path -LiteralPath $inspectionPath) { Remove-Item -LiteralPath $inspectionPath }
+    }
+    # Fail only the post-install controller: an unowned link blocks language migration.
+    $conflictingLink = Get-ShortcutPath $state.path $otherPluginLink
+    [IO.File]::WriteAllText($conflictingLink, 'foreign shortcut')
+    Run-Setup $executables.current ($silent + @("/LANG=$otherLanguage", "/LOG=`"$root\$hostName-shortcut-failure.log`"")) $false
+    Assert ([IO.File]::ReadAllText($conflictingLink) -eq 'foreign shortcut') 'post-install failure preserves the foreign link'
+    Assert (Test-Path (Get-ShortcutPath $state.path $ui.PluginLink)) 'post-install failure preserves the previous plugin shortcut'
+    Assert (Test-Path $uninstaller) 'post-install failure keeps the committed installation removable'
+    Remove-Item -LiteralPath $conflictingLink
     Run-Setup $executables.current ($silent + @("/LANG=$otherLanguage"))
     Assert ((Test-Path $otherLink) -and !(Test-Path $startMenu)) 'switching language migrates the start menu shortcut'
     Run-Setup $executables.current ($silent + @("/LANG=$Language"))

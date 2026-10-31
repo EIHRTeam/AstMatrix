@@ -61,6 +61,7 @@ var
   PayloadReady: Boolean;
   RegisteredDir, RegisteredVersion: String;
   DisableCepDeveloperMode: Boolean;
+  PostInstallFailed: Boolean;
 
 function InitializeSetup(): Boolean;
 var
@@ -200,10 +201,19 @@ begin
       RaiseException(ControllerFailure('InstallFailed'));
   end;
   if CurStep = ssPostInstall then begin
+    { Inno handles exceptions after the install commit without changing its exit code. }
+    PostInstallFailed := True;
     if not RunController('shortcuts', ExpandConstant('{app}\runtime.ps1')) then
       RaiseException(ControllerFailure('ShortcutFailed'));
     RemoveOtherLanguageShortcut();
+    PostInstallFailed := False;
   end;
+end;
+
+function GetCustomSetupExitCode(): Integer;
+begin
+  if PostInstallFailed then Result := 1
+  else Result := 0;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
