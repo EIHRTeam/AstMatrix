@@ -48,9 +48,19 @@ ZIP64, encryption, and packages over 256 MiB uncompressed. Output contains four 
 Both architectures are compiled from the same validated payload. Output also contains
 `installer-info.json`, and `SHA256SUMS.txt`; payload directories are temporary.
 
+All four EXEs include English and Simplified Chinese. Standard wizard and uninstall messages
+use Inno 7.1.1's bundled `Default.isl` and `Languages/ChineseSimplified.isl`; project messages
+are maintained in `messages.iss`. Interactive setup shows a language selector, initially
+selecting the system language or the previous installation language. English is the fallback.
+Use `/LANG=english` or `/LANG=chinesesimplified` to select a language explicitly, including
+silent installations. Uninstall uses the language saved by the latest installation.
+Controller errors carry stable message keys for the localized UI; detailed technical and
+Adobe diagnostics remain in `installer.log`. Unexpected errors show a translated summary
+with the diagnostic log path.
+
 Illustrator deploys to the current user's CEP extension directory and sets `PlayerDebugMode`
 to `REG_SZ` `1` for CEP 11/12. Interactive uninstall offers an unchecked
-**关闭 CEP 开发者模式** option. Selecting it sets existing CEP 11/12 `PlayerDebugMode`
+**关闭 CEP 开发者模式 / Disable CEP developer mode** option. Selecting it sets existing CEP 11/12 `PlayerDebugMode`
 values to `REG_SZ` `0`; other settings and CEP versions are untouched. This affects other
 unsigned CEP extensions too. The default and silent uninstall retain developer mode.
 Photoshop invokes the existing UPIA with a 120-second wait. Zero exit status still requires
@@ -74,11 +84,14 @@ are not adopted. Updates use the existing payload backup/rollback and Adobe UPIA
 without invoking the previous uninstaller first.
 
 The native Inno uninstaller remains in the stable LocalAppData management directory.
-Setup adds `卸载 AstMatrix.lnk` in the actual plugin directory and
-`AstMatrix/卸载 AstMatrix for <host>` in the current user's Start menu. The plugin shortcut
+Setup adds `Uninstall AstMatrix.lnk` / `卸载 AstMatrix.lnk` in the actual plugin directory and
+`AstMatrix/Uninstall AstMatrix for <host>` / `AstMatrix/卸载 AstMatrix for <host>` in the current
+user's Start menu, according to the selected language. The plugin shortcut
 is inventoried separately in `uninstall-shortcut.json`, so it does not affect payload
 integrity checks. Upgrades migrate the shortcut and remove an unchanged old entry; foreign
-or modified shortcuts are preserved. Legacy state without a shortcut record is supported.
+or modified plugin shortcuts are preserved. Language switches also migrate the shortcut
+name; old Start menu entries are removed only if they target this installation's uninstaller
+without extra arguments. Legacy state without a shortcut record or localized file name is supported.
 Plugin removal runs only after uninstall confirmation. A controller failure stops Inno
 cleanup, retaining state and uninstall entry points for retry or diagnosis.
 
@@ -99,6 +112,9 @@ AppData and management directories to a temporary tree, install twice, and unins
 `upgrade.tests.ps1` additionally compiles isolated legacy and current installers with unique
 test AppIds, then checks real version upgrades, shortcut migration, downgrade rejection,
 cancelled dialogs, failed removal, and explicit CEP disable using Windows UI Automation.
+Both languages run on each architecture, including switching languages during reinstall and
+checking the uninstaller's saved language. Catalog tests check translation coverage and
+interpolation placeholders; local PowerShell tests cover old-record and localized-name migration.
 The legacy script fixture preserves the pre-upgrade installation format and lack of shortcuts;
 its OS gate is parameterized for testing that state layout on ARM64 too, and its system
 process launch is adapted to Inno 7's native-system API.

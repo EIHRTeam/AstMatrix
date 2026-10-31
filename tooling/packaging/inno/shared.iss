@@ -17,12 +17,14 @@
 [Setup]
 SetupArchitecture=x86
 AppId={#StableAppId}
-AppName=AstMatrix for {#HostName}
+AppName={cm:ProductName,{#HostName}}
 AppVersion={#AppVersion}
 AppPublisher=Endfield Industries Human Resource Team
 AppPublisherURL=https://github.com/EIHRTeam/AstMatrix
 DefaultDirName={localappdata}\AstMatrix\Installers\{#HostName}
 UsePreviousAppDir=yes
+UsePreviousLanguage=yes
+ShowLanguageDialog=yes
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 DisableWelcomePage=no
@@ -35,14 +37,16 @@ Compression=lzma2/max
 SolidCompression=yes
 CloseApplications=no
 RestartApplications=no
-UninstallDisplayName=AstMatrix for {#HostName}
+UninstallDisplayName={cm:ProductName,{#HostName}}
 LicenseFile={#PayloadDir}\LICENSE
 SetupLogging=yes
 OutputBaseFilename=AstMatrix-{#HostName}-{#AppVersion}{#ArchitectureSuffix}-Setup
 VersionInfoVersion={#AppVersion}.0
 
+#include "messages.iss"
+
 [Icons]
-Name: "{userprograms}\AstMatrix\卸载 AstMatrix for {#HostName}"; Filename: "{uninstallexe}"
+Name: "{userprograms}\AstMatrix\{cm:UninstallShortcut,{#HostName}}"; Filename: "{uninstallexe}"
 
 [Files]
 Source: "runtime.ps1"; DestDir: "{app}"; Flags: ignoreversion
@@ -69,16 +73,16 @@ begin
     if not RegQueryStringValue(HKCU64, Key, 'InstallLocation', RegisteredDir) or
        not RegQueryStringValue(HKCU64, Key, 'DisplayVersion', RegisteredVersion) or
        (RegisteredDir = '') or not StrToVersion(RegisteredVersion, Version) then begin
-      SuppressibleMsgBox('The previous Inno installation record is incomplete. Repair or uninstall it before retrying.', mbError, MB_OK, IDOK);
+      SuppressibleMsgBox(CustomMessage('RegistrationIncomplete'), mbError, MB_OK, IDOK);
       exit;
     end;
     if not StrToVersion('{#AppVersion}', TargetVersion) then exit;
     if ComparePackedVersion(Version, TargetVersion) > 0 then begin
-      SuppressibleMsgBox('A newer AstMatrix version is already installed. Downgrade is not supported.', mbError, MB_OK, IDOK);
+      SuppressibleMsgBox(CustomMessage('ErrDowngrade'), mbError, MB_OK, IDOK);
       exit;
     end;
     if not FileExists(AddBackslash(RegisteredDir) + 'state.json') then begin
-      SuppressibleMsgBox('The previous Inno installation state is missing. Repair or uninstall it before retrying.', mbError, MB_OK, IDOK);
+      SuppressibleMsgBox(CustomMessage('StateMissing'), mbError, MB_OK, IDOK);
       exit;
     end;
   end;
@@ -107,7 +111,9 @@ begin
       Arguments := Arguments + ' -RegisteredVersion ' + Quote(RegisteredVersion);
   end;
   if Operation = 'shortcuts' then
-    Arguments := Arguments + ' -UninstallerPath ' + Quote(ExpandConstant('{uninstallexe}'));
+    Arguments := Arguments + ' -UninstallerPath ' + Quote(ExpandConstant('{uninstallexe}')) +
+      ' -ShortcutName ' + Quote(CustomMessage('PluginUninstallShortcut')) +
+      ' -ShortcutDescription ' + Quote(FmtMessage(CustomMessage('UninstallShortcut'), ['{#HostName}']));
   if (Operation = 'uninstall') and DisableCepDeveloperMode then
     Arguments := Arguments + ' -DisableCepDeveloperMode';
   Result := ExecAndLogOutputWithNativeSysDir(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
@@ -115,19 +121,44 @@ begin
   Result := Result and (ExitCode = 0);
 end;
 
+function ControllerFailure(const FallbackKey: String): String;
+var
+  Key: String;
+begin
+  Key := GetIniString('result', 'errorKey', '', ExpandConstant('{tmp}\astmatrix-result.ini'));
+  if Key = '' then Key := FallbackKey;
+  Result := CustomMessage(Key) + ' ' + FmtMessage(CustomMessage('ReviewLog'), [ExpandConstant('{app}\installer.log')]);
+end;
+
+procedure RemoveOtherLanguageShortcut();
+var
+  Path: String;
+  Shell, Link: Variant;
+begin
+  Path := ExpandConstant('{userprograms}\AstMatrix\') + FmtMessage(CustomMessage('OtherUninstallShortcut'), ['{#HostName}']) + '.lnk';
+  if not FileExists(Path) then exit;
+  try
+    Shell := CreateOleObject('WScript.Shell');
+    Link := Shell.CreateShortcut(Path);
+    if PathSame(Link.TargetPath, ExpandConstant('{uninstallexe}')) and (Link.Arguments = '') then
+      DeleteFile(Path);
+  except
+    Log('Previous-language shortcut cleanup failed: ' + GetExceptionMessage);
+  end;
+  Link := Unassigned;
+  Shell := Unassigned;
+end;
+
 procedure InitializeWizard();
 begin
 #if HostName == "Illustrator"
-  WizardForm.WelcomeLabel2.Caption := 'Installs for the current Windows user. Illustrator 27.x through 30.x is supported.' + #13#10#13#10 +
-    'This unsigned CEP extension requires the shared CEP 11 and CEP 12 PlayerDebugMode settings. Both are set to the string 1. Uninstall retains them unless you choose to disable CEP developer mode.';
+  WizardForm.WelcomeLabel2.Caption := CustomMessage('WelcomeIllustrator');
 #else
-  WizardForm.WelcomeLabel2.Caption := 'Requires Photoshop 26.0 or later. Uses Adobe UPIA first. Selected installation failures fall back to experimental file extraction.' + #13#10#13#10 +
-    'Extraction does not modify Adobe plugin registration and may not load in Photoshop. Restart Photoshop to verify. Adobe WebView dependencies must already be installed.';
+  WizardForm.WelcomeLabel2.Caption := CustomMessage('WelcomePhotoshop');
 #endif
   if RegisteredVersion <> '' then begin
-    WizardForm.WelcomeLabel1.Caption := 'Update AstMatrix for {#HostName}';
-    WizardForm.WelcomeLabel2.Caption := RegisteredVersion + ' → {#AppVersion}' + #13#10#13#10 +
-      'Setup will update the existing installation in place. Continue and click Install to confirm.' + #13#10#13#10 + WizardForm.WelcomeLabel2.Caption;
+    WizardForm.WelcomeLabel1.Caption := FmtMessage(CustomMessage('UpdateTitle'), ['{#HostName}']);
+    WizardForm.WelcomeLabel2.Caption := FmtMessage(CustomMessage('UpdateIntro'), [RegisteredVersion, '{#AppVersion}']) + #13#10#13#10 + WizardForm.WelcomeLabel2.Caption;
   end;
 end;
 
@@ -135,7 +166,8 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
   if (RegisteredDir <> '') and not PathSame(RemoveBackslashUnlessRoot(RegisteredDir), RemoveBackslashUnlessRoot(ExpandConstant('{app}'))) then begin
-    Result := 'Updates must use the previous installation management directory: ' + RegisteredDir;
+    Log('Update management directory mismatch. Expected: ' + RegisteredDir + '; actual: ' + ExpandConstant('{app}'));
+    Result := CustomMessage('ManagerDirectoryMismatch');
     exit;
   end;
   if not PayloadReady then begin
@@ -147,13 +179,12 @@ begin
     PayloadReady := True;
   end;
   if not RunController('preflight', ExpandConstant('{tmp}\runtime.ps1')) then begin
-    Result := GetIniString('result', 'error', 'Preflight failed. Close {#HostName} and check compatibility.', ExpandConstant('{tmp}\astmatrix-result.ini')) +
-      ' Review ' + ExpandConstant('{app}\installer.log') + '.';
+    Result := ControllerFailure('PreflightFailed');
     exit;
   end;
   if GetIniString('result', 'host', '', ExpandConstant('{tmp}\astmatrix-result.ini')) = 'unknown' then begin
-    if SuppressibleMsgBox('No {#HostName} installation was detected. Ensure a compatible version is installed before using the plugin. Continue?', mbConfirmation, MB_YESNO, IDYES) <> IDYES then
-      Result := 'Installation cancelled.';
+    if SuppressibleMsgBox(CustomMessage('HostNotDetected'), mbConfirmation, MB_YESNO, IDYES) <> IDYES then
+      Result := CustomMessage('InstallationCancelled');
   end;
 end;
 
@@ -161,11 +192,12 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then begin
     if not RunController('install', ExpandConstant('{tmp}\runtime.ps1')) then
-      RaiseException('Plugin installation failed. Review ' + ExpandConstant('{app}\installer.log') + '.');
+      RaiseException(ControllerFailure('InstallFailed'));
   end;
   if CurStep = ssPostInstall then begin
     if not RunController('shortcuts', ExpandConstant('{app}\runtime.ps1')) then
-      RaiseException('Could not create the plugin uninstall shortcut. Reinstall to repair it. Review ' + ExpandConstant('{app}\installer.log') + '.');
+      RaiseException(ControllerFailure('ShortcutFailed'));
+    RemoveOtherLanguageShortcut();
   end;
 end;
 
@@ -173,7 +205,7 @@ procedure CurPageChanged(CurPageID: Integer);
 begin
 #if HostName == "Photoshop"
   if (CurPageID = wpFinished) and (GetIniString('result', 'mode', '', ExpandConstant('{tmp}\astmatrix-result.ini')) = 'extracted') then
-    WizardForm.FinishedLabel.Caption := 'Experimental fallback: plugin files have been deployed. Restart Photoshop to verify that AstMatrix loads. File deployment does not confirm successful plugin loading.';
+    WizardForm.FinishedLabel.Caption := CustomMessage('ExtractionFinished');
 #endif
 end;
 
@@ -192,28 +224,28 @@ begin
   if UninstallSilent then exit;
   Form := CreateCustomForm(460, 190, False, True);
   try
-    Form.Caption := 'AstMatrix for Illustrator - 卸载选项';
+    Form.Caption := FmtMessage(CustomMessage('UninstallOptionsTitle'), ['{#HostName}']);
     LabelText := TNewStaticText.Create(Form);
     LabelText.Parent := Form;
     LabelText.SetBounds(ScaleX(20), ScaleY(20), ScaleX(420), ScaleY(65));
     LabelText.AutoSize := False;
     LabelText.WordWrap := True;
-    LabelText.Caption := '卸载 AstMatrix。默认保留 CEP 11/12 开发者模式。关闭此共享设置也会影响其他未签名 CEP 扩展。';
+    LabelText.Caption := CustomMessage('UninstallOptionsIntro');
     Checkbox := TNewCheckBox.Create(Form);
     Checkbox.Parent := Form;
     Checkbox.SetBounds(ScaleX(20), ScaleY(95), ScaleX(420), ScaleY(25));
-    Checkbox.Caption := '关闭 CEP 开发者模式';
+    Checkbox.Caption := CustomMessage('DisableCepDeveloperMode');
     Checkbox.Checked := False;
     ContinueButton := TNewButton.Create(Form);
     ContinueButton.Parent := Form;
-    ContinueButton.SetBounds(ScaleX(240), ScaleY(145), ScaleX(100), ScaleY(25));
-    ContinueButton.Caption := '继续卸载';
+    ContinueButton.SetBounds(ScaleX(180), ScaleY(145), ScaleX(160), ScaleY(25));
+    ContinueButton.Caption := CustomMessage('ContinueUninstall');
     ContinueButton.ModalResult := mrOk;
     ContinueButton.Default := True;
     CancelButton := TNewButton.Create(Form);
     CancelButton.Parent := Form;
     CancelButton.SetBounds(ScaleX(350), ScaleY(145), ScaleX(90), ScaleY(25));
-    CancelButton.Caption := '取消';
+    CancelButton.Caption := CustomMessage('Cancel');
     CancelButton.ModalResult := mrCancel;
     CancelButton.Cancel := True;
     Result := Form.ShowModal() = mrOk;
@@ -228,6 +260,6 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usUninstall then begin
     if not RunController('uninstall', ExpandConstant('{app}\runtime.ps1')) then
-      RaiseException('Plugin removal could not complete. Close {#HostName} and review ' + ExpandConstant('{app}\installer.log') + '. Installer state and uninstall entry points have been retained.');
+      RaiseException(ControllerFailure('UninstallFailed'));
   end;
 end;

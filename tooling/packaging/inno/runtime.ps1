@@ -10,11 +10,19 @@ param(
   [switch]$ValidateRegistration,
   [string]$RegisteredVersion,
   [string]$UninstallerPath,
-  [switch]$DisableCepDeveloperMode
+  [switch]$DisableCepDeveloperMode,
+  [ValidateSet('卸载 AstMatrix.lnk', 'Uninstall AstMatrix.lnk')][string]$ShortcutName = '卸载 AstMatrix.lnk',
+  [string]$ShortcutDescription
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+function Stop-Installer($Key, $Detail) {
+  $exception = New-Object InvalidOperationException($Detail)
+  $exception.Data['InstallerError'] = $Key
+  throw $exception
+}
 
 function Write-JsonFile($Path, $Value) {
   [IO.Directory]::CreateDirectory((Split-Path -Parent $Path)) | Out-Null
@@ -37,8 +45,8 @@ function Get-PluginDestination($Version) {
 function Assert-Registration($State) {
   if (!$ValidateRegistration) { return }
   if ($RegisteredVersion) {
-    if (!$State -or $State.version -ne $RegisteredVersion) { throw 'Inno registration and plugin state disagree. Repair or uninstall the previous installation before retrying.' }
-  } elseif ($State) { throw 'Plugin state exists without an Inno registration. Refusing to overwrite an unregistered installation.' }
+    if (!$State -or $State.version -ne $RegisteredVersion) { Stop-Installer 'ErrRegistrationConflict' 'Inno registration and plugin state disagree. Repair or uninstall the previous installation before retrying.' }
+  } elseif ($State) { Stop-Installer 'ErrUnregisteredState' 'Plugin state exists without an Inno registration. Refusing to overwrite an unregistered installation.' }
 }
 
 function Get-ShortcutRecord {
@@ -47,13 +55,20 @@ function Get-ShortcutRecord {
   return $null
 }
 
-function Get-ShortcutPath($Directory) {
-  return Get-SafeFilePath $Directory '卸载 AstMatrix.lnk'
+function Get-ShortcutPath($Directory, $Name = '卸载 AstMatrix.lnk') {
+  if ($Name -notin @('卸载 AstMatrix.lnk', 'Uninstall AstMatrix.lnk')) { Stop-Installer 'ErrShortcutName' 'Invalid uninstall shortcut name.' }
+  return Get-SafeFilePath $Directory $Name
+}
+
+function Get-ShortcutRecordName($Record) {
+  if ($Record.PSObject.Properties['name']) { return [string]$Record.name }
+  # Pre-i18n records used the fixed Chinese file name.
+  return '卸载 AstMatrix.lnk'
 }
 
 function Remove-UninstallShortcut($Record) {
   if (!$Record) { return }
-  $file = Get-ShortcutPath $Record.directory
+  $file = Get-ShortcutPath $Record.directory (Get-ShortcutRecordName $Record)
   if ((Test-Path -LiteralPath $file) -and (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -eq $Record.sha256) {
     Remove-Item -LiteralPath $file
     if (!@(Get-ChildItem -LiteralPath $Record.directory -Force).Count) { Remove-Item -LiteralPath $Record.directory }
@@ -66,31 +81,32 @@ function Write-UninstallShortcut($Path) {
     $shortcut = $shell.CreateShortcut($Path)
     $shortcut.TargetPath = $UninstallerPath
     $shortcut.WorkingDirectory = $ManagerDir
-    $shortcut.Description = "Uninstall AstMatrix for $HostName"
+    $shortcut.Description = if ($ShortcutDescription) { $ShortcutDescription } else { "Uninstall AstMatrix for $HostName" }
     $shortcut.Save()
   } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($shell) }
 }
 
 function Install-UninstallShortcut($State) {
-  if (!$State) { throw 'Cannot create an uninstall shortcut without plugin state.' }
+  if (!$State) { Stop-Installer 'ErrShortcutState' 'Cannot create an uninstall shortcut without plugin state.' }
   $directory = if ($State.mode -eq 'upia') { $State.pluginPath } else { $State.path }
-  if (!(Test-Path -LiteralPath $directory -PathType Container)) { throw 'The installed plugin directory is missing.' }
-  if ((Split-Path -Parent $UninstallerPath) -ne $ManagerDir -or !(Test-Path -LiteralPath $UninstallerPath -PathType Leaf)) { throw 'The Inno uninstaller is missing or outside the management directory.' }
+  if (!(Test-Path -LiteralPath $directory -PathType Container)) { Stop-Installer 'ErrShortcutState' 'The installed plugin directory is missing.' }
+  if ((Split-Path -Parent $UninstallerPath) -ne $ManagerDir -or !(Test-Path -LiteralPath $UninstallerPath -PathType Leaf)) { Stop-Installer 'ErrUninstallerMissing' 'The Inno uninstaller is missing or outside the management directory.' }
   $previous = Get-ShortcutRecord
-  $file = Get-ShortcutPath $directory
+  $previousPath = if ($previous) { Get-ShortcutPath $previous.directory (Get-ShortcutRecordName $previous) } else { '' }
+  $file = Get-ShortcutPath $directory $ShortcutName
   $exists = Test-Path -LiteralPath $file
-  if ($exists -and (!$previous -or $previous.directory -ne $directory -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $previous.sha256)) { throw 'An unowned or modified uninstall shortcut already exists.' }
+  if ($exists -and (!$previous -or $previousPath -ne $file -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $previous.sha256)) { Stop-Installer 'ErrShortcutConflict' 'An unowned or modified uninstall shortcut already exists.' }
   $backup = if ($exists) { [IO.File]::ReadAllBytes($file) } else { $null }
   try {
     Write-UninstallShortcut $file
-    $record = @{ directory = $directory; sha256 = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash }
+    $record = @{ directory = $directory; name = $ShortcutName; sha256 = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash }
     Write-JsonFile (Join-Path $ManagerDir 'uninstall-shortcut.json') $record
   } catch {
     if ($exists) { [IO.File]::WriteAllBytes($file, $backup) }
     elseif (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file }
     throw
   }
-  if ($previous -and $previous.directory -ne $directory) { Remove-UninstallShortcut $previous }
+  if ($previous -and $previousPath -ne $file) { Remove-UninstallShortcut $previous }
 }
 
 function Disable-CepDeveloperMode {
@@ -105,7 +121,7 @@ function Disable-CepDeveloperMode {
 
 function Assert-NoHostProcess {
   if (Get-Process -Name $HostName -ErrorAction SilentlyContinue) {
-    throw "Close $HostName completely and retry. No Adobe process has been terminated."
+    Stop-Installer 'ErrHostRunning' "Close $HostName completely and retry. No Adobe process has been terminated."
   }
 }
 
@@ -142,7 +158,7 @@ function Test-HostCompatibility {
     if ($HostName -eq 'Photoshop') { $_ -ge [version]'26.0' }
     else { $_ -ge [version]'27.0' -and $_ -lt [version]'30.10' }
   })
-  if (!$compatible.Count) { throw "No compatible $HostName installation found. Requires $(if ($HostName -eq 'Photoshop') {'26.0+'} else {'27.x through 30.x'})." }
+  if (!$compatible.Count) { Stop-Installer 'ErrHostIncompatible' "No compatible $HostName installation found. Requires $(if ($HostName -eq 'Photoshop') {'26.0+'} else {'27.x through 30.x'})." }
   return 'compatible'
 }
 
@@ -227,26 +243,26 @@ function Test-AdobeRegistration {
 }
 
 function Get-SafeFilePath($Root, $Relative) {
-  if ([IO.Path]::IsPathRooted($Relative) -or $Relative -match '(^|[\\/])\.\.?([\\/]|$)|:') { throw 'Invalid managed file path' }
+  if ([IO.Path]::IsPathRooted($Relative) -or $Relative -match '(^|[\\/])\.\.?([\\/]|$)|:') { Stop-Installer 'ErrUnsafePath' 'Invalid managed file path' }
   $separator = [IO.Path]::DirectorySeparatorChar
   $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd($separator)
   $full = [IO.Path]::GetFullPath((Join-Path $rootPath $Relative))
-  if (!$full.StartsWith($rootPath + $separator, [StringComparison]::OrdinalIgnoreCase)) { throw 'Managed file escaped plugin directory' }
+  if (!$full.StartsWith($rootPath + $separator, [StringComparison]::OrdinalIgnoreCase)) { Stop-Installer 'ErrUnsafePath' 'Managed file escaped plugin directory' }
   $current = Split-Path -Parent $full
   while ($current -and $current.Length -ge $rootPath.Length) {
-    if ((Test-Path -LiteralPath $current) -and ((Get-Item -LiteralPath $current).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Refusing plugin directory junction or symlink' }
+    if ((Test-Path -LiteralPath $current) -and ((Get-Item -LiteralPath $current).Attributes -band [IO.FileAttributes]::ReparsePoint)) { Stop-Installer 'ErrUnsafePath' 'Refusing plugin directory junction or symlink' }
     $current = Split-Path -Parent $current
   }
-  if ((Test-Path -LiteralPath $full) -and ((Get-Item -LiteralPath $full).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Refusing managed file symlink' }
+  if ((Test-Path -LiteralPath $full) -and ((Get-Item -LiteralPath $full).Attributes -band [IO.FileAttributes]::ReparsePoint)) { Stop-Installer 'ErrUnsafePath' 'Refusing managed file symlink' }
   return $full
 }
 
 function Assert-State($State) {
   if ($null -eq $State) { return }
-  if ($State.hostName -ne $HostName -or $State.mode -notin @('upia', 'extracted')) { throw 'Invalid installer state' }
-  if ($State.version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid installer version in state' }
-  if ($State.mode -eq 'extracted' -and !@($State.files).Count) { throw 'Extracted state has no file inventory' }
-  if ($State.path -ne (Get-PluginDestination $State.version)) { throw 'Installer state points outside its own deployment' }
+  if ($State.hostName -ne $HostName -or $State.mode -notin @('upia', 'extracted')) { Stop-Installer 'ErrInvalidState' 'Invalid installer state' }
+  if ($State.version -notmatch '^\d+\.\d+\.\d+$') { Stop-Installer 'ErrInvalidState' 'Invalid installer version in state' }
+  if ($State.mode -eq 'extracted' -and !@($State.files).Count) { Stop-Installer 'ErrInvalidState' 'Extracted state has no file inventory' }
+  if ($State.path -ne (Get-PluginDestination $State.version)) { Stop-Installer 'ErrInvalidState' 'Installer state points outside its own deployment' }
 }
 
 function Test-OwnedFiles($State) {
@@ -287,21 +303,21 @@ function Install-Payload($Previous) {
   $parsedFiles = Get-Content -LiteralPath (Join-Path $PayloadDir 'payload-files.json') -Raw -Encoding UTF8 | ConvertFrom-Json
   $files = @(foreach ($item in $parsedFiles) { @{ path = [string]$item.path; sha256 = [string]$item.sha256 } })
   # Preflight every file before writing any file; reject foreign deployments and modifications.
-  if ((Test-Path -LiteralPath $destination) -and (!$Previous -or $Previous.path -ne $destination -or !(Test-OwnedFiles $Previous))) { throw 'An unmanaged or externally modified plugin already occupies the destination.' }
+  if ((Test-Path -LiteralPath $destination) -and (!$Previous -or $Previous.path -ne $destination -or !(Test-OwnedFiles $Previous))) { Stop-Installer 'ErrPayloadConflict' 'An unmanaged or externally modified plugin already occupies the destination.' }
   foreach ($entry in $files) {
     $source = Get-SafeFilePath $PayloadDir $entry.path
     $target = Get-SafeFilePath $destination $entry.path
-    if ((Test-Path -LiteralPath $target) -and (!$Previous -or $Previous.path -ne $destination -or $entry.path -notin @($Previous.files | ForEach-Object { $_.path }))) { throw 'An untracked file occupies a new payload path; refusing to overwrite it.' }
-    if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne $entry.sha256) { throw 'Embedded payload hash mismatch' }
+    if ((Test-Path -LiteralPath $target) -and (!$Previous -or $Previous.path -ne $destination -or $entry.path -notin @($Previous.files | ForEach-Object { $_.path }))) { Stop-Installer 'ErrPayloadConflict' 'An untracked file occupies a new payload path; refusing to overwrite it.' }
+    if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne $entry.sha256) { Stop-Installer 'ErrPayloadHash' 'Embedded payload hash mismatch' }
   }
   $backup = Join-Path $ManagerDir 'rollback'
-  if (Test-Path -LiteralPath $backup) { throw 'A previous rollback directory needs manual recovery before retrying.' }
+  if (Test-Path -LiteralPath $backup) { Stop-Installer 'ErrRollbackNeeded' 'A previous rollback directory needs manual recovery before retrying.' }
   $written = @()
   $discardBackup = $false
   $registryBackup = @()
   try {
     if ($Previous -and $Previous.mode -eq 'extracted') {
-      if (!(Test-OwnedFiles $Previous)) { throw 'The previous plugin was modified externally; refusing to overwrite it.' }
+      if (!(Test-OwnedFiles $Previous)) { Stop-Installer 'ErrPayloadConflict' 'The previous plugin was modified externally; refusing to overwrite it.' }
       foreach ($entry in $Previous.files) {
         $saved = Get-SafeFilePath $backup $entry.path
         [IO.Directory]::CreateDirectory((Split-Path -Parent $saved)) | Out-Null
@@ -355,9 +371,9 @@ function Install-Payload($Previous) {
 }
 
 function Install-Photoshop($Previous) {
-  if (Get-Process -Name UnifiedPluginInstallerAgent -ErrorAction SilentlyContinue) { throw 'Adobe UPIA is already running. Wait for it to finish before retrying.' }
+  if (Get-Process -Name UnifiedPluginInstallerAgent -ErrorAction SilentlyContinue) { Stop-Installer 'ErrUpiaRunning' 'Adobe UPIA is already running. Wait for it to finish before retrying.' }
   $plugins = @(Get-InstalledPlugins)
-  if (@($plugins | Where-Object { [version]$_.version -gt [version]$AppVersion }).Count) { throw 'A newer AstMatrix plugin is already installed.' }
+  if (@($plugins | Where-Object { [version]$_.version -gt [version]$AppVersion }).Count) { Stop-Installer 'ErrNewerPlugin' 'A newer AstMatrix plugin is already installed.' }
   $foreign = @($plugins | Where-Object { !$Previous -or $Previous.mode -ne 'extracted' -or $_.path -ne $Previous.path })
   $managed = $foreign.Count -gt 0 -or (Test-AdobeRegistration) -or ($Previous -and $Previous.mode -eq 'upia')
   $upia = Find-Upia
@@ -371,17 +387,17 @@ function Install-Photoshop($Previous) {
       # UPIA may reuse the old extraction directory: require /list plus exact on-disk identity.
       if (!$installed.Count) { $installed = @(Get-InstalledPlugins | Where-Object { $_.version -eq $AppVersion }) }
       $pattern = '(?im)^\s*Enabled\s+AstMatrix\s+' + [regex]::Escape($AppVersion) + '(?:\s|$)'
-      if ($listed.status -ne 'exited' -or $listed.code -ne 0 -or $listed.text -notmatch $pattern -or !$installed.Count) { throw 'UPIA returned success but installation could not be verified. No extraction was attempted.' }
+      if ($listed.status -ne 'exited' -or $listed.code -ne 0 -or $listed.text -notmatch $pattern -or !$installed.Count) { Stop-Installer 'ErrUpiaVerify' 'UPIA returned success but installation could not be verified. No extraction was attempted.' }
       if ($Previous -and $Previous.mode -eq 'extracted' -and $Previous.path -ne $installed[0].path) { Remove-OwnedFiles $Previous }
       $state = @{ hostName = $HostName; version = $AppVersion; mode = 'upia'; path = (Get-PluginDestination $AppVersion); pluginPath = $installed[0].path; files = @() }
       Write-JsonFile (Join-Path $ManagerDir 'state.json') $state
       return $state
     }
-    if ($disposition -eq 'stop') { throw "UPIA installation stopped (code $($result.code)). $($result.text) No extraction was attempted." }
+    if ($disposition -eq 'stop') { Stop-Installer 'ErrUpiaStopped' "UPIA installation stopped (code $($result.code)). $($result.text) No extraction was attempted." }
   }
   # Reinspect after a failed UPIA operation; it may have partially installed the plugin.
   $after = @(Get-InstalledPlugins | Where-Object { !$Previous -or $Previous.mode -ne 'extracted' -or $_.path -ne $Previous.path })
-  if ($managed -or $after.Count -or (Test-AdobeRegistration)) { throw 'An Adobe-managed or unowned AstMatrix installation exists. Repair it using Creative Cloud; extraction would create a conflicting copy.' }
+  if ($managed -or $after.Count -or (Test-AdobeRegistration)) { Stop-Installer 'ErrManagedConflict' 'An Adobe-managed or unowned AstMatrix installation exists. Repair it using Creative Cloud; extraction would create a conflicting copy.' }
   return Install-Payload $Previous
 }
 
@@ -395,16 +411,16 @@ function Uninstall-Plugin($State) {
   $plugins = @(Get-InstalledPlugins)
   if (@($plugins | Where-Object { $_.version -ne $State.version }).Count) { Write-Host 'Adobe plugin updated externally. It has been preserved.'; return }
   if (!$plugins.Count -and !(Test-AdobeRegistration)) { return }
-  if (!@($plugins | Where-Object { $_.path -eq $State.pluginPath -and $_.version -eq $State.version }).Count) { throw 'Cannot establish the Adobe-managed installation identity; uninstall it through Creative Cloud.' }
+  if (!@($plugins | Where-Object { $_.path -eq $State.pluginPath -and $_.version -eq $State.version }).Count) { Stop-Installer 'ErrManagedIdentity' 'Cannot establish the Adobe-managed installation identity; uninstall it through Creative Cloud.' }
   $upia = Find-Upia
-  if (!$upia) { throw 'UPIA is missing. Restore Creative Cloud or uninstall the plugin there before retrying.' }
+  if (!$upia) { Stop-Installer 'ErrUpiaMissing' 'UPIA is missing. Restore Creative Cloud or uninstall the plugin there before retrying.' }
   $before = Invoke-Upia $upia '/list all'
   $named = [regex]::Matches($before.text, '(?im)^\s*(?:Enabled|Disabled)\s+AstMatrix\s+(\S+)[ \t]*$')
-  if ($before.status -ne 'exited' -or $before.code -ne 0 -or $named.Count -ne 1 -or $named[0].Groups[1].Value -ne $State.version) { throw 'UPIA cannot uniquely identify AstMatrix by name. Uninstall the Photoshop plugin through Creative Cloud to avoid removing a different plugin.' }
+  if ($before.status -ne 'exited' -or $before.code -ne 0 -or $named.Count -ne 1 -or $named[0].Groups[1].Value -ne $State.version) { Stop-Installer 'ErrUpiaAmbiguous' 'UPIA cannot uniquely identify AstMatrix by name. Uninstall the Photoshop plugin through Creative Cloud to avoid removing a different plugin.' }
   $result = Invoke-Upia $upia '/remove "AstMatrix"'
-  if ($result.status -ne 'exited' -or $result.code -ne 0) { throw 'UPIA could not remove the plugin. Installer state has been retained.' }
+  if ($result.status -ne 'exited' -or $result.code -ne 0) { Stop-Installer 'ErrUpiaRemoval' 'UPIA could not remove the plugin. Installer state has been retained.' }
   $listed = Invoke-Upia $upia '/list all'
-  if ($listed.status -ne 'exited' -or $listed.code -ne 0 -or $listed.text -match '(?im)^\s*(?:Enabled|Disabled)\s+AstMatrix\s+' -or @(Get-InstalledPlugins).Count) { throw 'UPIA removal could not be verified. Installer state has been retained.' }
+  if ($listed.status -ne 'exited' -or $listed.code -ne 0 -or $listed.text -match '(?im)^\s*(?:Enabled|Disabled)\s+AstMatrix\s+' -or @(Get-InstalledPlugins).Count) { Stop-Installer 'ErrUpiaRemovalVerify' 'UPIA removal could not be verified. Installer state has been retained.' }
 }
 
 function Invoke-Installer {
@@ -414,13 +430,13 @@ function Invoke-Installer {
   $transcribing = $false
   try {
     $locked = $mutex.WaitOne(0)
-    if (!$locked) { throw 'Another AstMatrix installer is running.' }
+    if (!$locked) { Stop-Installer 'ErrInstallerBusy' 'Another AstMatrix installer is running.' }
     Start-Transcript -LiteralPath (Join-Path $ManagerDir 'installer.log') -Append | Out-Null
     $transcribing = $true
     Assert-NoHostProcess
     $state = Get-State
     Assert-State $state
-    if ($DisableCepDeveloperMode -and ($Operation -ne 'uninstall' -or $HostName -ne 'Illustrator')) { throw 'DisableCepDeveloperMode is only supported for Illustrator uninstall.' }
+    if ($DisableCepDeveloperMode -and ($Operation -ne 'uninstall' -or $HostName -ne 'Illustrator')) { Stop-Installer 'ErrInvalidOption' 'DisableCepDeveloperMode is only supported for Illustrator uninstall.' }
     if ($Operation -eq 'uninstall') {
       Uninstall-Plugin $state
       if ($DisableCepDeveloperMode) { Disable-CepDeveloperMode }
@@ -435,7 +451,7 @@ function Invoke-Installer {
     }
     Assert-Registration $state
     $compatibility = Test-HostCompatibility
-    if ($state -and [version]$state.version -gt [version]$AppVersion) { throw 'A newer installer version is already installed; downgrade is not supported.' }
+    if ($state -and [version]$state.version -gt [version]$AppVersion) { Stop-Installer 'ErrDowngrade' 'A newer installer version is already installed; downgrade is not supported.' }
     if ($Operation -eq 'preflight') {
       [IO.File]::WriteAllText($ResultPath, "[result]`r`nhost=$compatibility`r`n")
       return
@@ -447,7 +463,7 @@ function Invoke-Installer {
     Write-Host "ERROR: $($_.Exception.Message)"
     Write-Host $_.ScriptStackTrace
     if ($ResultPath) {
-      try { [IO.File]::WriteAllText($ResultPath, ("[result]`r`nerror=" + ($_.Exception.Message -replace '[\r\n]', ' ') + "`r`n"), [Text.Encoding]::Unicode) }
+      try { [IO.File]::WriteAllText($ResultPath, ("[result]`r`nerrorKey=" + $_.Exception.Data['InstallerError'] + "`r`nerror=" + ($_.Exception.Message -replace '[\r\n]', ' ') + "`r`n"), [Text.Encoding]::Unicode) }
       catch { Write-Host 'Could not write the installer error summary.' }
     }
     throw

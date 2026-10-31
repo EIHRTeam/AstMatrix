@@ -12,6 +12,12 @@ function Assert-Throws([scriptblock]$Action, $Message) {
   try { & $Action } catch { $caught = $true }
   Assert $caught $Message
 }
+function Assert-InstallerError([scriptblock]$Action, $Key) {
+  $caught = $null
+  try { & $Action } catch { $caught = $_ }
+  Assert ($null -ne $caught) "expected installer error $Key"
+  Assert ($caught.Exception.Data['InstallerError'] -eq $Key) "stable localization key $Key"
+}
 
 $root = Join-Path ([IO.Path]::GetTempPath()) ('astmatrix-tests-' + [guid]::NewGuid())
 $originalAppData = $env:APPDATA
@@ -43,11 +49,11 @@ try {
     $RegisteredVersion = ''
     Assert-Registration $null
     $legacyState = [pscustomobject]@{ version = '0.1.1' }
-    Assert-Throws { Assert-Registration $legacyState } 'orphaned state cannot be overwritten'
+    Assert-InstallerError { Assert-Registration $legacyState } 'ErrUnregisteredState'
     $RegisteredVersion = '0.1.1'
     Assert-Registration $legacyState
     Assert-Throws { Assert-Registration $null } 'registered install requires state'
-    Assert-Throws { Assert-Registration ([pscustomobject]@{ version = '0.1.2' }) } 'registry and state version must agree'
+    Assert-InstallerError { Assert-Registration ([pscustomobject]@{ version = '0.1.2' }) } 'ErrRegistrationConflict'
   }
 
   & {
@@ -66,6 +72,15 @@ try {
     Assert ((Get-ShortcutRecord).directory -eq $first) 'UPIA shortcut uses actual pluginPath'
     Install-UninstallShortcut $shortcutState
     Assert (Test-Path (Get-ShortcutPath $first)) 'repeat shortcut creation works'
+    $legacyRecord = Get-ShortcutRecord
+    Write-JsonFile (Join-Path $ManagerDir 'uninstall-shortcut.json') @{ directory = $legacyRecord.directory; sha256 = $legacyRecord.sha256 }
+    $ShortcutName = 'Uninstall AstMatrix.lnk'
+    Install-UninstallShortcut $shortcutState
+    Assert (Test-Path (Get-ShortcutPath $first $ShortcutName)) 'English shortcut replaces the legacy fixed Chinese name'
+    Assert (!(Test-Path (Get-ShortcutPath $first))) 'old-language plugin shortcut removed'
+    $ShortcutName = '卸载 AstMatrix.lnk'
+    Install-UninstallShortcut $shortcutState
+    Assert (!(Test-Path (Get-ShortcutPath $first 'Uninstall AstMatrix.lnk'))) 'switching back does not leave duplicate shortcuts'
     & {
       function Write-JsonFile { throw 'Injected shortcut inventory failure' }
       Assert-Throws { Install-UninstallShortcut $shortcutState } 'shortcut commit failure propagates'
@@ -215,11 +230,14 @@ try {
 
   & {
     $Operation = 'preflight'
+    $ResultPath = Join-Path $root 'result.ini'
     $AppVersion = '0.1.1'
     function Assert-NoHostProcess {}
     function Test-HostCompatibility { return 'compatible' }
     function Get-State { return $managed }
-    Assert-Throws { Invoke-Installer } 'controller rejects downgrade before modifying payload'
+    Assert-InstallerError { Invoke-Installer } 'ErrDowngrade'
+    $summary = [IO.File]::ReadAllText($ResultPath)
+    Assert ($summary -match 'errorKey=ErrDowngrade' -and $summary -match 'downgrade is not supported') 'INI carries a localization key and preserves diagnostic detail'
     $Operation = 'uninstall'
     & {
       $DisableCepDeveloperMode = $true
@@ -231,6 +249,7 @@ try {
     function Uninstall-Plugin { throw 'Injected removal failure' }
     $before = Get-Content (Join-Path $ManagerDir 'state.json') -Raw
     Assert-Throws { Invoke-Installer } 'removal failure propagates'
+    Assert ([IO.File]::ReadAllText($ResultPath) -match 'errorKey=\r?\n') 'unexpected errors clear the prior localization key so UI uses its translated fallback'
     Assert ((Get-Content (Join-Path $ManagerDir 'state.json') -Raw) -eq $before) 'removal failure retains persisted state'
   }
 
@@ -260,7 +279,8 @@ try {
       $process = Start-Process $wrongSetup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$manager`"") -Wait -PassThru
       Assert ($process.ExitCode -ne 0 -and !(Test-Path (Join-Path $manager 'state.json'))) 'wrong architecture is rejected before deployment'
       foreach ($attempt in @(1, 2)) {
-        $process = Start-Process $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$manager`"", "/LOG=`"$root\$hostName-$attempt.log`"") -Wait -PassThru
+        $installLanguage = if ($attempt -eq 1) { 'english' } else { 'chinesesimplified' }
+        $process = Start-Process $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LANG=$installLanguage", "/DIR=`"$manager`"", "/LOG=`"$root\$hostName-$attempt.log`"") -Wait -PassThru
         Assert ($process.ExitCode -eq 0) "$hostName EXE installation $attempt"
       }
       $record = Get-Content (Join-Path $manager 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -293,8 +313,10 @@ try {
         }
       }
     }
-    & $shell -NoLogo -NoProfile -File "$PSScriptRoot/upgrade.tests.ps1" -Architecture $Architecture
-    Assert ($LASTEXITCODE -eq 0) 'isolated old-to-new EXE and uninstall option tests'
+    foreach ($language in @('english', 'chinesesimplified')) {
+      & $shell -NoLogo -NoProfile -File "$PSScriptRoot/upgrade.tests.ps1" -Architecture $Architecture -Language $language
+      Assert ($LASTEXITCODE -eq 0) "isolated old-to-new EXE and uninstall option tests: $language"
+    }
   }
   Write-Host 'Runtime and installer tests passed. Adobe host loading was not tested.'
 } finally {

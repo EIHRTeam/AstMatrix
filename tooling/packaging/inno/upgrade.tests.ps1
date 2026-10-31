@@ -1,9 +1,19 @@
 ﻿# Windows-only EXE acceptance tests. Test AppIds are unique; no fixture EXEs are published.
-param([ValidateSet('x64', 'aarch64')][string]$Architecture = 'x64')
+param(
+  [ValidateSet('x64', 'aarch64')][string]$Architecture = 'x64',
+  [ValidateSet('english', 'chinesesimplified')][string]$Language = 'english'
+)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/runtime.ps1"
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
+$ui = if ($Language -eq 'english') {
+  @{ Checkbox = 'Disable CEP developer mode'; Cancel = 'Cancel'; Continue = 'Continue uninstall'; StartMenu = 'Uninstall AstMatrix for'; PluginLink = 'Uninstall AstMatrix.lnk' }
+} else {
+  @{ Checkbox = '关闭 CEP 开发者模式'; Cancel = '取消'; Continue = '继续卸载'; StartMenu = '卸载 AstMatrix for'; PluginLink = '卸载 AstMatrix.lnk' }
+}
+$otherLanguage = if ($Language -eq 'english') { 'chinesesimplified' } else { 'english' }
+$otherStartMenu = if ($Language -eq 'english') { '卸载 AstMatrix for' } else { 'Uninstall AstMatrix for' }
 
 function Assert($Condition, $Message) { if (!$Condition) { throw "Assertion failed: $Message" } }
 function Run-Setup($Path, $Arguments, $Success = $true) {
@@ -36,13 +46,13 @@ function Run-InteractiveUninstall($Path, $CancelOptions, $Confirm, $Disable) {
     (Start-Process $Path -ArgumentList '/NORESTART' -Wait -PassThru).ExitCode
   }
   try {
-    $checkbox = Find-Control '关闭 CEP 开发者模式'
+    $checkbox = Find-Control $ui.Checkbox
     $toggle = $checkbox.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
     Assert ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) 'CEP option defaults to unchecked'
-    if ($CancelOptions) { Click-Control (Find-Control '取消') }
+    if ($CancelOptions) { Click-Control (Find-Control $ui.Cancel) }
     else {
       if ($Disable) { $toggle.Toggle() }
-      Click-Control (Find-Control '继续卸载')
+      Click-Control (Find-Control $ui.Continue)
       # Standard Windows confirmation button IDs: IDYES=6, IDNO=7.
       Click-Control (Find-Control '' $(if ($Confirm) { '6' } else { '7' }))
       if ($Confirm) { Click-Control (Find-Control '' '1') } # completion message, IDOK=1
@@ -79,9 +89,12 @@ try {
     $testIds += $id
     $manager = Join-Path $root "$hostName manager"
     $regPath = "Software\Microsoft\Windows\CurrentVersion\Uninstall\${id}_is1"
-    $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) "AstMatrix\卸载 AstMatrix for $hostName.lnk"
+    $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) "AstMatrix\$($ui.StartMenu) $hostName.lnk"
+    $otherLink = Join-Path ([Environment]::GetFolderPath('Programs')) "AstMatrix\$otherStartMenu $hostName.lnk"
     Assert (!(Test-Path $startMenu)) 'fixture must not overwrite an existing start menu entry'
     $links += $startMenu
+    Assert (!(Test-Path $otherLink)) 'fixture must not overwrite the other-language start menu entry'
+    $links += $otherLink
     $executables = @{}
     foreach ($fixture in @('legacy', 'current', 'next', 'downgrade')) {
       $version = switch ($fixture) { 'current' { '0.0.2' }; 'next' { '0.0.3' }; default { '0.0.1' } }
@@ -122,7 +135,7 @@ SourceDir=$PSScriptRoot
     Assert ($old.version -eq '0.0.1') 'legacy installation created'
     Assert (!(Test-Path (Join-Path $manager 'uninstall-shortcut.json'))) 'legacy fixture has no shortcut record'
     # Omit /DIR: Inno must discover and reuse the old installation directory.
-    Run-Setup $executables.current ($silent + @("/LOG=`"$root\$hostName-upgrade.log`""))
+    Run-Setup $executables.current ($silent + @("/LANG=$Language", "/LOG=`"$root\$hostName-upgrade.log`""))
     $state = Get-Content (Join-Path $manager 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     Assert ($state.version -eq '0.0.2') 'new installer upgraded old state in place'
     $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($regPath)
@@ -132,16 +145,19 @@ SourceDir=$PSScriptRoot
     $uninstaller = Join-Path $manager 'unins000.exe'
     $wscript = New-Object -ComObject WScript.Shell
     try {
-      foreach ($link in @((Get-ShortcutPath $state.path), $startMenu)) {
+      foreach ($link in @((Get-ShortcutPath $state.path $ui.PluginLink), $startMenu)) {
         Assert (Test-Path $link) 'both uninstall shortcuts created during migration'
         Assert ($wscript.CreateShortcut($link).TargetPath -eq $uninstaller) 'shortcut targets stable uninstaller'
       }
     } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($wscript) }
-    Run-Setup $executables.current $silent
-    $oldShortcut = Get-ShortcutPath $state.path
+    Run-Setup $executables.current ($silent + @("/LANG=$otherLanguage"))
+    Assert ((Test-Path $otherLink) -and !(Test-Path $startMenu)) 'switching language migrates the start menu shortcut'
+    Run-Setup $executables.current ($silent + @("/LANG=$Language"))
+    Assert ((Test-Path $startMenu) -and !(Test-Path $otherLink)) 'switching back leaves one localized start menu entry'
+    $oldShortcut = Get-ShortcutPath $state.path $ui.PluginLink
     Run-Setup $executables.next $silent
     $state = Get-Content (Join-Path $manager 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-    Assert (Test-Path (Get-ShortcutPath $state.path)) 'upgrade keeps shortcut in current plugin directory'
+    Assert (Test-Path (Get-ShortcutPath $state.path $ui.PluginLink)) 'upgrade keeps shortcut in current plugin directory'
     if ($hostName -eq 'Photoshop') { Assert (!(Test-Path $oldShortcut)) 'upgrade removes shortcut from previous version directory' }
     Run-Setup $executables.downgrade $silent $false
     Assert ((Get-Content (Join-Path $manager 'state.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version -eq '0.0.3') 'downgrade leaves state unchanged'
@@ -168,7 +184,7 @@ SourceDir=$PSScriptRoot
       Run-Setup $uninstaller $silent $false
       Assert (Test-Path $uninstaller) 'failed uninstall retains Inno uninstaller'
       Assert (Test-Path $startMenu) 'failed uninstall retains start menu shortcut'
-      Assert (Test-Path (Get-ShortcutPath $state.path)) 'failed uninstall retains plugin shortcut'
+      Assert (Test-Path (Get-ShortcutPath $state.path $ui.PluginLink)) 'failed uninstall retains plugin shortcut'
       [IO.File]::WriteAllText($stateFile, $originalState, (New-Object Text.UTF8Encoding($false)))
       $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Software\Adobe\CSXS.13')
       try { $key.SetValue('PlayerDebugMode', 'test-other-version') } finally { $key.Dispose() }
@@ -181,7 +197,7 @@ SourceDir=$PSScriptRoot
         } finally { $key.Dispose() }
       }
     } else { Run-Setup $uninstaller $silent }
-    Assert (!(Test-Path $startMenu) -and !(Test-Path (Get-ShortcutPath $state.path))) 'uninstall cleans both shortcut locations'
+    Assert (!(Test-Path $startMenu) -and !(Test-Path (Get-ShortcutPath $state.path $ui.PluginLink))) 'uninstall cleans both shortcut locations'
     Assert ($null -eq [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($regPath)) 'uninstall removes Inno registration'
   }
   $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Software\Adobe\CSXS.11')
@@ -199,7 +215,7 @@ SourceDir=$PSScriptRoot
   } finally { $key.Dispose() }
   $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Adobe\CSXS.12')
   try { Assert ($key.GetValueNames() -notcontains 'PlayerDebugMode') 'disable does not create an absent value' } finally { $key.Dispose() }
-  Write-Host 'Isolated upgrade, cancellation, and CEP option EXE tests passed.'
+  Write-Host "Isolated upgrade, cancellation, and CEP option EXE tests passed: $Language."
 } finally {
   foreach ($entry in $savedRegistry) {
     $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($entry.path)
