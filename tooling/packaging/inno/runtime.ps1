@@ -12,7 +12,8 @@ param(
   [string]$UninstallerPath,
   [switch]$DisableCepDeveloperMode,
   [ValidateSet('卸载 AstMatrix.lnk', 'Uninstall AstMatrix.lnk')][string]$ShortcutName = '卸载 AstMatrix.lnk',
-  [string]$ShortcutDescription
+  [string]$ShortcutDescription,
+  [string]$PreviousStartMenuShortcut
 )
 
 Set-StrictMode -Version Latest
@@ -112,6 +113,23 @@ namespace AstMatrix {
   }
 
   public static class UninstallShortcut {
+    public static bool Targets(string path, string target) {
+      object instance = new ShellLink();
+      try {
+        ((IPersistFile)instance).Load(path, 0);
+        IShellLinkW link = (IShellLinkW)instance;
+        StringBuilder storedTarget = new StringBuilder(32768);
+        StringBuilder arguments = new StringBuilder(32768);
+        // SLGP_RAWPATH reads the stored target without resolving or repairing it.
+        link.GetPath(storedTarget, storedTarget.Capacity, IntPtr.Zero, 4);
+        link.GetArguments(arguments, arguments.Capacity);
+        return String.Equals(storedTarget.ToString(), target, StringComparison.OrdinalIgnoreCase)
+          && arguments.Length == 0;
+      } finally {
+        Marshal.ReleaseComObject(instance);
+      }
+    }
+
     public static void Save(string path, string target, string directory, string description) {
       object instance = new ShellLink();
       try {
@@ -153,6 +171,19 @@ function Install-UninstallShortcut($State) {
     throw
   }
   if ($previous -and $previousPath -ne $file) { Remove-UninstallShortcut $previous }
+}
+
+function Remove-PreviousStartMenuShortcut {
+  if (!$PreviousStartMenuShortcut -or !(Test-Path -LiteralPath $PreviousStartMenuShortcut)) { return }
+  try {
+    # Use the same Unicode reader for both the localized name and the target.
+    # This runs after Install-UninstallShortcut has initialized the native adapter.
+    if ([AstMatrix.UninstallShortcut]::Targets($PreviousStartMenuShortcut, $UninstallerPath)) {
+      Remove-Item -LiteralPath $PreviousStartMenuShortcut
+    }
+  } catch {
+    Write-Host "Previous-language shortcut cleanup failed: $($_.Exception.Message)"
+  }
 }
 
 function Disable-CepDeveloperMode {
@@ -493,6 +524,7 @@ function Invoke-Installer {
     }
     if ($Operation -eq 'shortcuts') {
       Install-UninstallShortcut $state
+      Remove-PreviousStartMenuShortcut
       return
     }
     Assert-Registration $state

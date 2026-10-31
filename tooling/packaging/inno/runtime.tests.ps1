@@ -137,6 +137,28 @@ try {
         Assert ($shortcut.Description -eq $ShortcutDescription) "native shortcut preserves the localized description (expected '$ShortcutDescription', actual '$($shortcut.Description)')"
       }
       Assert (!(Test-Path (Get-ShortcutPath $directory 'Uninstall AstMatrix.lnk'))) 'native language switch removes the previous link'
+      $menu = Join-Path $env:APPDATA 'Start menu 测试'
+      [IO.Directory]::CreateDirectory($menu) | Out-Null
+      foreach ($name in @('Uninstall AstMatrix for Photoshop.lnk', '卸载 AstMatrix for Photoshop.lnk')) {
+        $PreviousStartMenuShortcut = Join-Path $menu $name
+        Write-UninstallShortcut $PreviousStartMenuShortcut
+        Remove-PreviousStartMenuShortcut
+        Assert (!(Test-Path -LiteralPath $PreviousStartMenuShortcut)) 'cleanup reads localized Start Menu links and Unicode targets'
+
+        $expectedTarget = $UninstallerPath
+        try {
+          $UninstallerPath = Join-Path $ManagerDir 'foreign.exe'
+          Write-UninstallShortcut $PreviousStartMenuShortcut
+        } finally { $UninstallerPath = $expectedTarget }
+        $hash = (Get-FileHash -LiteralPath $PreviousStartMenuShortcut).Hash
+        Remove-PreviousStartMenuShortcut
+        Assert ((Get-FileHash -LiteralPath $PreviousStartMenuShortcut).Hash -eq $hash) 'cleanup preserves a shortcut targeting another executable'
+        [IO.File]::WriteAllText($PreviousStartMenuShortcut, 'foreign invalid shortcut')
+        Remove-PreviousStartMenuShortcut
+        Assert ([IO.File]::ReadAllText($PreviousStartMenuShortcut) -eq 'foreign invalid shortcut') 'cleanup preserves unreadable shortcuts'
+        Remove-Item -LiteralPath $PreviousStartMenuShortcut
+        Remove-PreviousStartMenuShortcut
+      }
       Remove-UninstallShortcut (Get-ShortcutRecord)
       Assert (!(Test-Path -LiteralPath $directory)) 'native shortcut removal cleans its empty directory'
       Assert-Throws { Write-UninstallShortcut (Join-Path $directory 'missing.lnk') } 'native save errors propagate'

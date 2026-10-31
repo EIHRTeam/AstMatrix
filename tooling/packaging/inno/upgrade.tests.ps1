@@ -165,9 +165,9 @@ SourceDir=$PSScriptRoot
     Assert (Test-Path (Get-ShortcutPath $state.path $ui.PluginLink)) 'post-install failure preserves the previous plugin shortcut'
     Assert (Test-Path $uninstaller) 'post-install failure keeps the committed installation removable'
     Remove-Item -LiteralPath $conflictingLink
-    Run-Setup $executables.current ($silent + @("/LANG=$otherLanguage"))
+    Run-Setup $executables.current ($silent + @("/LANG=$otherLanguage", "/LOG=`"$root\$hostName-switch-language.log`""))
     Assert ((Test-Path $otherLink) -and !(Test-Path $startMenu)) 'switching language migrates the start menu shortcut'
-    Run-Setup $executables.current ($silent + @("/LANG=$Language"))
+    Run-Setup $executables.current ($silent + @("/LANG=$Language", "/LOG=`"$root\$hostName-switch-back.log`""))
     Assert ((Test-Path $startMenu) -and !(Test-Path $otherLink)) 'switching back leaves one localized start menu entry'
     $oldShortcut = Get-ShortcutPath $state.path $ui.PluginLink
     Run-Setup $executables.next $silent

@@ -114,7 +114,9 @@ begin
   if Operation = 'shortcuts' then
     Arguments := Arguments + ' -UninstallerPath ' + Quote(ExpandConstant('{uninstallexe}')) +
       ' -ShortcutName ' + Quote(CustomMessage('PluginUninstallShortcut')) +
-      ' -ShortcutDescription ' + Quote(FmtMessage(CustomMessage('UninstallShortcut'), ['{#HostName}']));
+      ' -ShortcutDescription ' + Quote(FmtMessage(CustomMessage('UninstallShortcut'), ['{#HostName}'])) +
+      ' -PreviousStartMenuShortcut ' + Quote(ExpandConstant('{userprograms}\AstMatrix\') +
+        FmtMessage(CustomMessage('OtherUninstallShortcut'), ['{#HostName}']) + '.lnk');
   if (Operation = 'uninstall') and DisableCepDeveloperMode then
     Arguments := Arguments + ' -DisableCepDeveloperMode';
   Result := ExecAndLogOutputWithNativeSysDir(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
@@ -129,25 +131,6 @@ begin
   Key := GetIniString('result', 'errorKey', '', ExpandConstant('{tmp}\astmatrix-result.ini'));
   if Key = '' then Key := FallbackKey;
   Result := CustomMessage(Key) + ' ' + FmtMessage(CustomMessage('ReviewLog'), [ExpandConstant('{app}\installer.log')]);
-end;
-
-procedure RemoveOtherLanguageShortcut();
-var
-  Path: String;
-  Shell, Link: Variant;
-begin
-  Path := ExpandConstant('{userprograms}\AstMatrix\') + FmtMessage(CustomMessage('OtherUninstallShortcut'), ['{#HostName}']) + '.lnk';
-  if not FileExists(Path) then exit;
-  try
-    Shell := CreateOleObject('WScript.Shell');
-    Link := Shell.CreateShortcut(Path);
-    if PathSame(Link.TargetPath, ExpandConstant('{uninstallexe}')) and (Link.Arguments = '') then
-      DeleteFile(Path);
-  except
-    Log('Previous-language shortcut cleanup failed: ' + GetExceptionMessage);
-  end;
-  Link := Unassigned;
-  Shell := Unassigned;
 end;
 
 procedure InitializeWizard();
@@ -205,7 +188,6 @@ begin
     PostInstallFailed := True;
     if not RunController('shortcuts', ExpandConstant('{app}\runtime.ps1')) then
       RaiseException(ControllerFailure('ShortcutFailed'));
-    RemoveOtherLanguageShortcut();
     PostInstallFailed := False;
   end;
 end;
