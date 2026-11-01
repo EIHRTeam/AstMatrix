@@ -5,6 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/runtime.ps1"
+. "$PSScriptRoot/test-helpers.ps1"
 
 function Assert($Condition, $Message) { if (!$Condition) { throw "Assertion failed: $Message" } }
 function Assert-Throws([scriptblock]$Action, $Message) {
@@ -460,5 +461,5 @@ try {
       }
     }
   }
-  if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }
+  if (Test-Path -LiteralPath $root) { Remove-TestTree $root }
 }

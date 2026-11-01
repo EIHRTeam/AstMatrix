@@ -109,7 +109,8 @@ the actual compiler, validates all four EXE versions, then runs `runtime.tests.p
 Windows PowerShell 5.1 on x64. The ARM64 job downloads those same EXEs and runs
 `runtime.tests.ps1 -Architecture aarch64` on Windows ARM64. Both jobs also verify that
 the wrong-architecture package refuses installation before deploying plugin files.
-Mocks are confined to the test scripts and are never embedded in EXEs.
+Mocks are confined to the test scripts and are never embedded in EXEs. Cleanup and
+uninstaller-process helpers shared by both test scripts live in `test-helpers.ps1`.
 Runtime tests cover UPIA decisions, conflicts and preservation. EXE smoke tests redirect
 AppData and management directories to a temporary tree, install twice, and uninstall.
 `upgrade.tests.ps1` additionally compiles isolated legacy and current installers with unique

@@ -5,12 +5,13 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/runtime.ps1"
+. "$PSScriptRoot/test-helpers.ps1"
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 $ui = if ($Language -eq 'english') {
-  @{ Checkbox = 'Disable CEP developer mode'; Cancel = 'Cancel'; Continue = 'OK'; StartMenu = 'Uninstall AstMatrix for'; PluginLink = 'Uninstall AstMatrix.lnk' }
+  @{ Checkbox = 'Disable CEP developer mode'; Cancel = 'Cancel'; Continue = 'OK'; Confirm = 'Yes'; Decline = 'No'; StartMenu = 'Uninstall AstMatrix for'; PluginLink = 'Uninstall AstMatrix.lnk' }
 } else {
-  @{ Checkbox = '关闭 CEP 开发者模式'; Cancel = '取消'; Continue = '确定'; StartMenu = '卸载 AstMatrix for'; PluginLink = '卸载 AstMatrix.lnk' }
+  @{ Checkbox = '关闭 CEP 开发者模式'; Cancel = '取消'; Continue = '确定'; Confirm = '是'; Decline = '否'; StartMenu = '卸载 AstMatrix for'; PluginLink = '卸载 AstMatrix.lnk' }
 }
 $otherLanguage = if ($Language -eq 'english') { 'chinesesimplified' } else { 'english' }
 $otherStartMenu = if ($Language -eq 'english') { '卸载 AstMatrix for' } else { 'Uninstall AstMatrix for' }
@@ -18,48 +19,105 @@ $otherPluginLink = if ($Language -eq 'english') { '卸载 AstMatrix.lnk' } else 
 
 function Assert($Condition, $Message) { if (!$Condition) { throw "Assertion failed: $Message" } }
 function Run-Setup($Path, $Arguments, $Success = $true) {
-  $process = Start-Process $Path -ArgumentList $Arguments -Wait -PassThru
+  # Start-Process -Wait also waits for descendant processes, so a setup that
+  # leaves a long-running child (UPIA when Adobe is installed) would hang the
+  # test instead of reporting the exit code. Wait for the setup itself.
+  $process = Start-Process $Path -ArgumentList $Arguments -PassThru
+  $process.WaitForExit()
   Assert (($process.ExitCode -eq 0) -eq $Success) "EXE result: $Path ($($process.ExitCode))"
 }
-function Find-Control($Name, $Id = '') {
-  $property = [Windows.Automation.AutomationElement]::NameProperty
-  $value = $Name
-  if ($Id) { $property = [Windows.Automation.AutomationElement]::AutomationIdProperty; $value = $Id }
-  $condition = New-Object Windows.Automation.PropertyCondition($property, $value)
+function Get-NormalizedCaption($Caption) {
+  # Task dialogs drop the accelerator marker, and localized message boxes may
+  # append a hotkey hint such as '(Y)' in half- or full-width parentheses, so
+  # compare captions without either.
+  return (($Caption -replace '&', '') -replace '\s*[\(（][^\)）]*[\)）]\s*$', '').Trim()
+}
+function Find-UninstallerElement($Path, $Description, $Caption, [switch]$Button) {
+  # Inno 7 renders the uninstall confirmation and completion messages as task
+  # dialogs, whose buttons have instance-specific automation IDs instead of
+  # IDYES/IDOK, so match the localized caption. Search only the uninstaller's own
+  # windows: a stale dialog from an earlier case must never be clicked.
+  $directory = Split-Path -Parent $Path
+  $wanted = if ($Button) { Get-NormalizedCaption $Caption } else { $Caption }
   $deadline = [DateTime]::UtcNow.AddSeconds(30)
+  $ids = @()
+  $seen = [System.Collections.Generic.List[string]]::new()
   do {
-    $windows = [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Children, [Windows.Automation.Condition]::TrueCondition)
-    foreach ($window in $windows) {
-      if ($window.Current.Name -notlike 'AstMatrix*') { continue }
-      $element = $window.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
-      if ($element) { return $element }
+    if (!$ids.Count) {
+      # CIM returns UInt32; PropertyCondition only accepts Int32.
+      $ids = @(Get-UninstallerProcess $directory | ForEach-Object { [int]$_.ProcessId })
+      if (!$ids.Count) { Start-Sleep -Milliseconds 100; continue }
     }
+    $sawWindow = $false
+    foreach ($id in $ids) {
+      $condition = New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ProcessIdProperty, $id)
+      $windows = [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Children, $condition)
+      foreach ($window in $windows) {
+        try {
+          $title = $window.Current.Name
+          $elements = $window.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
+        } catch { continue }
+        $sawWindow = $true
+        foreach ($element in $elements) {
+          # A dialog can close between enumeration and property access.
+          try {
+            $current = $element.Current
+            $isButton = $current.ControlType -eq [Windows.Automation.ControlType]::Button -or $current.ClassName -like '*Button*'
+            if ($isButton) {
+              $label = '{0} :: {1} (offscreen={2}, enabled={3})' -f $title, $current.Name, $current.IsOffscreen, $current.IsEnabled
+              if (!$seen.Contains($label)) { [void]$seen.Add($label) }
+            }
+            if (!$Button) {
+              if ($current.Name -eq $wanted) { return $element }
+            } elseif ($isButton -and !$current.IsOffscreen -and $current.IsEnabled) {
+              if ((Get-NormalizedCaption $current.Name) -ieq $wanted) { return $element }
+            }
+          } catch { continue }
+        }
+      }
+    }
+    # The uninstaller restarts itself, so re-resolve its process when no window
+    # exists yet; a replacement process would otherwise never be found.
+    if (!$sawWindow) { $ids = @() }
     Start-Sleep -Milliseconds 100
   } while ([DateTime]::UtcNow -lt $deadline)
-  throw "Uninstall control not found: $Name $Id"
+  $observed = if ($seen.Count) { ($seen | Select-Object -First 10) -join '; ' } else { 'none' }
+  throw "$Description not found (pids: $(if ($ids.Count) { $ids -join ', ' } else { 'none' })). Buttons: $observed"
+}
+function Find-Control($Path, $Name) {
+  return Find-UninstallerElement $Path "Uninstall control: $Name" $Name
+}
+function Find-Button($Path, $Caption) {
+  return Find-UninstallerElement $Path "Uninstall button: $Caption" $Caption -Button
 }
 function Click-Control($Element) {
   $Element.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
 }
 function Run-InteractiveUninstall($Path, $CancelOptions, $Confirm, $Disable) {
-  $job = Start-Job -ArgumentList $Path -ScriptBlock {
-    param($Path)
-    (Start-Process $Path -ArgumentList '/NORESTART' -Wait -PassThru).ExitCode
+  # Keep the uninstaller's own log so a dialog left unanswered is diagnosable.
+  $log = Join-Path $root ('interactive-uninstall-' + [guid]::NewGuid().ToString('N') + '.log')
+  $job = Start-Job -ArgumentList $Path, $log -ScriptBlock {
+    param($Path, $Log)
+    (Start-Process $Path -ArgumentList @('/NORESTART', "/LOG=`"$Log`"") -Wait -PassThru).ExitCode
   }
   try {
-    $checkbox = Find-Control $ui.Checkbox
+    $checkbox = Find-Control $Path $ui.Checkbox
     $toggle = $checkbox.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
     Assert ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) 'CEP option defaults to unchecked'
-    if ($CancelOptions) { Click-Control (Find-Control $ui.Cancel) }
+    if ($CancelOptions) { Click-Control (Find-Button $Path $ui.Cancel) }
     else {
       if ($Disable) { $toggle.Toggle() }
-      Click-Control (Find-Control $ui.Continue)
-      # Standard Windows confirmation button IDs: IDYES=6, IDNO=7.
-      Click-Control (Find-Control '' $(if ($Confirm) { '6' } else { '7' }))
-      if ($Confirm) { Click-Control (Find-Control '' '1') } # completion message, IDOK=1
+      Click-Control (Find-Button $Path $ui.Continue)
+      Click-Control (Find-Button $Path $(if ($Confirm) { $ui.Confirm } else { $ui.Decline }))
+      if ($Confirm) { Click-Control (Find-Button $Path $ui.Continue) } # completion message
     }
-    Assert ($null -ne (Wait-Job $job -Timeout 45)) 'interactive uninstaller completed'
+    Assert ($null -ne (Wait-Job $job -Timeout 45)) 'interactive uninstaller completed (a dialog may have been left unanswered)'
     $null = Receive-Job $job -ErrorAction Stop
+  } catch {
+    # An unanswered dialog leaves the uninstaller waiting; stop it so the next
+    # case starts from a clean management directory.
+    Stop-UninstallerProcess (Split-Path -Parent $Path)
+    throw
   } finally { Stop-Job $job; Remove-Job $job -Force }
 }
 
@@ -252,6 +310,6 @@ SourceDir=$PSScriptRoot
       $name = 'upgrade-' + $log.FullName.Substring($root.Length + 1).Replace('\', '-')
       Copy-Item $log.FullName -Destination (Join-Path $diagnostics $name) -Force
     }
-    Remove-Item $root -Recurse -Force
+    Remove-TestTree $root
   }
 }
