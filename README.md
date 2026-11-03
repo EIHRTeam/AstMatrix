@@ -177,20 +177,19 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 ### Adobe Illustrator
 
-**Windows installer (.exe)**
-
-1. Download `AstMatrix-Illustrator-<version>-Setup.exe` for Windows x64, or `AstMatrix-Illustrator-<version>-aarch64-Setup.exe` for Windows ARM64, from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest). Close Illustrator and run the matching installer on Windows 10/11.
-2. The installer deploys the extension for the current user and enables the shared CEP 11/12 `PlayerDebugMode` settings (`REG_SZ`, `1`). These settings are retained on uninstall so other unsigned extensions keep working.
-3. Restart Illustrator and select "Window" > "Extensions" > "AstMatrix". Supported Illustrator versions are 27.x through 30.9.x.
-
-Upgrade by running a newer installer. Remove it through Windows Installed apps. EXE installers are unsigned; plugin resources are included and no plugin or Adobe runtime is downloaded during setup.
-
 **Via Adobe Creative Cloud**
 
 1. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
 2. Open the [Adobe Exchange page](https://exchange.adobe.com/apps/cc/206104/astmatrix), or search "**AstMatrix**" in the Creative Cloud desktop app.
 3. Install the plugin.
 4. Open Illustrator (or restart it completely if it is already running), then select "Window" > "Extensions" > "AstMatrix" to launch the plugin.
+
+**Via Installer Program (for Windows)**
+
+1. Download the appropriate installer for your system from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+    - Windows x64: `AstMatrix-Illustrator-<version>-Setup.exe`
+    - Windows ARM64: `AstMatrix-Illustrator-<version>-aarch64-Setup.exe`
+2. Run the installer and follow the on-screen instructions to complete the installation.
 
 **Manual**
 
@@ -219,20 +218,19 @@ Upgrade by running a newer installer. Remove it through Windows Installed apps. 
 
 ### Adobe Photoshop
 
-**Windows installer (.exe)**
-
-1. Download `AstMatrix-Photoshop-<version>-Setup.exe` for Windows x64, or `AstMatrix-Photoshop-<version>-aarch64-Setup.exe` for Windows ARM64, from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest). Close Photoshop and run the matching installer on Windows 10/11. This package requires Photoshop 26.0 or later and its Adobe WebView dependencies.
-2. Setup first uses the existing Adobe Unified Plugin Installer Agent (UPIA). If UPIA is missing, cannot start, or reports a recognized environment failure, setup attempts **experimental extraction** into a versioned plugin directory. It does not edit Adobe's internal plugin registration JSON.
-3. Restart Photoshop and check "Plugins" > "AstMatrix". **Extraction confirms file deployment only; Photoshop loading is not verified.** Cancelled, incompatible, invalid-package, conflicting-installation, and unresolved UPIA operations do not trigger extraction.
-
-Upgrade by running a newer installer; downgrades are rejected. Remove it through Windows Installed apps. Setup uses the recorded installation method for removal and preserves externally updated or modified plugin files. Diagnostics are saved to `%LOCALAPPDATA%\AstMatrix\Installers\Photoshop\installer.log`. EXE installers are unsigned and include all plugin resources; setup does not download UPIA or Adobe runtimes.
-
 **Via Adobe Creative Cloud**
 
 1. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
 2. Open the [Adobe Exchange page](https://exchange.adobe.com/apps/cc/1f4db629/astmatrix-for-photoshop), or search "**AstMatrix for Photoshop**" in the Creative Cloud desktop app.
 3. Install the plugin.
 4. Open Photoshop (or restart it completely if it is already running), then select "Plugins" > "AstMatrix" to launch the plugin.
+
+**Via Installer Program (for Windows)**
+
+1. Download the appropriate installer for your system from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+    - Windows x64: `AstMatrix-Photoshop-<version>-Setup.exe`
+    - Windows ARM64: `AstMatrix-Photoshop-<version>-aarch64-Setup.exe`
+2. Run the installer and follow the on-screen instructions to complete the installation.
 
 **Via Adobe Creative Cloud (.ccx file)**
 
