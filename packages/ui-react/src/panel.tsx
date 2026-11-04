@@ -20,7 +20,7 @@ import {
 import { AstMatrixError, errorMessage } from '@astmatrix/shared';
 import { migrateFields, normalizeRequest, profiles } from '@astmatrix/profiles';
 import type { ProfileDefinition } from '@astmatrix/profiles';
-import { getSymbology, symbologies } from '@astmatrix/symbology-catalog';
+import { catalog, getSymbology } from '@astmatrix/symbology-catalog';
 import type { CodeTab } from '@astmatrix/symbology-catalog';
 import { insertionReason } from '@astmatrix/host-contract';
 import type { HostAdapter } from '@astmatrix/host-contract';
@@ -31,6 +31,27 @@ import { ExternalLinkContext, HeaderActions, ProjectLinkContext } from './header
 import { contentPlaceholder } from './input-guidance';
 import { engineErrorMessage } from './l10n/engine-errors';
 import type { SelectionAction, SelectionState } from './selection';
+
+// Later catalog rows take precedence: GS1-128 belongs to Industrial; EAN-14 stays in Retail.
+const symbologyCategories = new Map(
+  catalog.flatMap((entry) => entry.symbologyIds.map((id) => [id, entry.category] as const)),
+);
+const symbologyGroups = [
+  { category: 'retail', label: '零售' },
+  { category: 'industrial', label: '工业' },
+  { category: 'publication', label: '出版' },
+  { category: 'matrix', label: '矩阵与堆叠' },
+].map(({ category, label }) => ({
+  category,
+  label,
+  symbologies: [
+    ...new Set(
+      catalog.filter((entry) => entry.category === category).flatMap((entry) => entry.symbologyIds),
+    ),
+  ]
+    .filter((id) => symbologyCategories.get(id) === category)
+    .map(getSymbology),
+}));
 
 const SelectionStateContext = createContext<SelectionState>(initialSelection);
 const SelectionDispatchContext = createContext<Dispatch<SelectionAction>>(() => {});
@@ -211,14 +232,22 @@ function Workbench({ runtime }: { runtime: Runtime }) {
               value={symbol.id}
               onChange={(e) => choose({ type: 'symbology', id: e.target.value })}
             >
-              {symbologies
-                .filter((s) => s.tab === selection.tab)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {t(s.label)}
-                    {s.status === 'listed' ? ' · ' + t('未实现') : ''}
-                  </option>
-                ))}
+              {symbologyGroups.map((group) => {
+                const options = group.symbologies
+                  .filter((s) => s.tab === selection.tab)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {t(s.label)}
+                      {s.status === 'listed' ? ' · ' + t('未实现') : ''}
+                    </option>
+                  ));
+                if (selection.tab === 'matrix') return options;
+                return options.length ? (
+                  <optgroup key={group.category} label={t(group.label)}>
+                    {options}
+                  </optgroup>
+                ) : null;
+              })}
             </select>
           </label>
           <label className="field">

@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/figma-plugin",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Offline Figma Design development plugin",
   "type": "module",

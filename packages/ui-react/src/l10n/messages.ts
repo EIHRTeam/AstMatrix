@@ -21,6 +21,10 @@ const english: Record<string, string> = {
   编码参数: 'Encoding settings',
   高级设置: 'Advanced settings',
   编码格式: 'Symbology',
+  零售: 'Retail',
+  工业: 'Industrial',
+  出版: 'Publication',
+  矩阵与堆叠: 'Matrix and stacked',
   业务预设: 'Preset',
   未实现: 'Not implemented',
   '共享编码、业务预设与矢量输出已实现；独立符合性与真实宿主验收尚未完成。':

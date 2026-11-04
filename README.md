@@ -177,7 +177,7 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 ### Adobe Illustrator
 
-**Via Adobe Creative Cloud**
+**Via Adobe Creative Cloud (Recommended)**
 
 1. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
 2. Open the [Adobe Exchange page](https://exchange.adobe.com/apps/cc/206104/astmatrix), or search "**AstMatrix**" in the Creative Cloud desktop app.
@@ -218,7 +218,7 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 ### Adobe Photoshop
 
-**Via Adobe Creative Cloud**
+**Via Adobe Creative Cloud (Recommended)**
 
 1. Make sure Adobe Creative Cloud is installed and that you are signed in with your Adobe account.
 2. Open the [Adobe Exchange page](https://exchange.adobe.com/apps/cc/1f4db629/astmatrix-for-photoshop), or search "**AstMatrix for Photoshop**" in the Creative Cloud desktop app.

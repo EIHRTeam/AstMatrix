@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/barcode-core",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Encoding providers (bwip-js/BWIPP) producing raw geometry",
   "type": "module",

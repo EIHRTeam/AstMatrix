@@ -1,6 +1,6 @@
 {
   "name": "@astmatrix/ui-uxp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Photoshop native UXP UI (no React requirement)",
   "type": "module",
