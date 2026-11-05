@@ -390,6 +390,7 @@ function Install-Payload($Previous) {
   $backup = Join-Path $ManagerDir 'rollback'
   if (Test-Path -LiteralPath $backup) { Stop-Installer 'ErrRollbackNeeded' 'A previous rollback directory needs manual recovery before retrying.' }
   $written = @()
+  $createdDirectories = @()
   $discardBackup = $false
   $registryBackup = @()
   try {
@@ -404,6 +405,11 @@ function Install-Payload($Previous) {
     }
     foreach ($entry in $files) {
       $file = Get-SafeFilePath $destination $entry.path
+      $directory = Split-Path -Parent $file
+      while ($directory -and $directory.Length -ge $destination.Length -and !(Test-Path -LiteralPath $directory)) {
+        $createdDirectories += $directory
+        $directory = Split-Path -Parent $directory
+      }
       [IO.Directory]::CreateDirectory((Split-Path -Parent $file)) | Out-Null
       $written += $file
       Copy-Item -LiteralPath (Get-SafeFilePath $PayloadDir $entry.path) -Destination $file
@@ -439,6 +445,13 @@ function Install-Payload($Previous) {
           [IO.Directory]::CreateDirectory((Split-Path -Parent $file)) | Out-Null
           Copy-Item -LiteralPath $saved -Destination $file -Force
         }
+      }
+    }
+    # A failed install must not leave an empty destination that blocks retry.
+    # Only prune directories created by this attempt; preserve restored and foreign files.
+    foreach ($directory in ($createdDirectories | Sort-Object Length -Descending)) {
+      if ((Test-Path -LiteralPath $directory) -and !@(Get-ChildItem -LiteralPath $directory -Force).Count) {
+        [IO.Directory]::Delete($directory, $false)
       }
     }
     $discardBackup = $true

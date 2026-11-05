@@ -266,6 +266,7 @@ try {
       Assert (Test-OwnedFiles $state) 'failed deployment restored previous files'
       Assert ((Get-State).version -eq $state.version) 'failed deployment retained previous state'
       Assert (!(Test-Path (Join-Path (Get-PluginDestination $AppVersion) 'manifest.json'))) 'failed upgrade left no new plugin manifest'
+      Assert (!(Test-Path -LiteralPath (Get-PluginDestination $AppVersion))) 'failed upgrade removes its empty destination so retry is possible'
     }
     Assert-Throws { Get-SafeFilePath $state.path '../foreign.txt' } 'traversal rejected'
     [IO.File]::WriteAllText((Join-Path $state.path 'index.js'), '// modified externally')
@@ -278,6 +279,60 @@ try {
     Assert (Test-Path (Join-Path $state.path 'foreign.txt')) 'untracked file survives uninstall'
     Assert (!(Test-Path (Join-Path $state.path 'manifest.json'))) 'owned files removed'
     Remove-Item -LiteralPath $state.path -Recurse
+  }
+
+  foreach ($scenario in @('fresh', 'upgrade', 'reinstall', 'foreign')) {
+    & {
+      $scenarioRoot = Join-Path $root "rollback-$scenario"
+      $ManagerDir = Join-Path $scenarioRoot 'manager'
+      $PayloadDir = Join-Path $scenarioRoot 'payload'
+      function Get-PluginDestination($Version) { return Join-Path $scenarioRoot "plugin-$Version" }
+      [IO.Directory]::CreateDirectory((Join-Path $PayloadDir 'webview/assets')) | Out-Null
+      [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"1f4db629","version":"0.1.2"}')
+      [IO.File]::WriteAllText((Join-Path $PayloadDir 'webview/assets/index.js'), '// nested fixture')
+      $entries = @('manifest.json', 'webview/assets/index.js') | ForEach-Object { @{ path = $_; sha256 = (Get-FileHash (Join-Path $PayloadDir $_)).Hash } }
+      Write-JsonFile (Join-Path $PayloadDir 'payload-files.json') @($entries)
+      $AppVersion = '0.1.2'
+      $previous = $null
+      if ($scenario -in @('upgrade', 'reinstall')) { $previous = Install-Payload $null }
+      if ($scenario -eq 'upgrade') { $AppVersion = '0.1.3' }
+      $destination = Get-PluginDestination $AppVersion
+      $script:failCopy = $true
+      function Copy-Item {
+        param([string]$LiteralPath, [string]$Destination, [switch]$Force)
+        if ($script:failCopy -and $LiteralPath -eq (Join-Path $PayloadDir 'webview/assets/index.js')) {
+          $script:failCopy = $false
+          if ($scenario -eq 'foreign') {
+            $foreignFile = Join-Path (Split-Path -Parent $Destination) '.foreign'
+            [IO.File]::WriteAllText($foreignFile, 'preserve me')
+            if ($windows) { [IO.File]::SetAttributes($foreignFile, [IO.FileAttributes]::Hidden) }
+          }
+          throw 'Injected nested copy failure'
+        }
+        Microsoft.PowerShell.Management\Copy-Item -LiteralPath $LiteralPath -Destination $Destination -Force:$Force
+      }
+      Assert-Throws { Install-Payload $previous } "$scenario nested deployment fails"
+      if ($previous) {
+        Assert (Test-OwnedFiles $previous) "$scenario rollback restores the previous nested payload"
+        Assert ((Get-State).version -eq $previous.version) "$scenario rollback retains the previous state"
+      } else {
+        Assert ($null -eq (Get-State)) "$scenario failure does not commit state"
+      }
+      if ($scenario -eq 'foreign') {
+        Assert ([IO.File]::ReadAllText((Join-Path $destination 'webview/assets/.foreign')) -eq 'preserve me') 'rollback preserves untracked files and their directories'
+        Assert-InstallerError { Install-Payload $null } 'ErrPayloadConflict'
+      } else {
+        if ($scenario -ne 'reinstall') {
+          Assert (!(Test-Path -LiteralPath $destination)) "$scenario rollback removes all newly created empty directories"
+        }
+        $retried = Install-Payload $previous
+        Assert (Test-OwnedFiles (Get-State)) "$scenario retry succeeds with a readable nested inventory"
+        Remove-OwnedFiles $retried
+        [IO.Directory]::CreateDirectory($destination) | Out-Null
+        Assert-InstallerError { Install-Payload $null } 'ErrPayloadConflict'
+        Assert (Test-Path -LiteralPath $destination) 'an existing unowned empty directory is still protected'
+      }
+    }
   }
 
   $script:UpiaResult = @{ status = 'exited'; code = 0; text = '' }
@@ -365,6 +420,9 @@ try {
 
   if ($InstallerDirectory) {
     Assert $windows 'EXE smoke tests require Windows'
+    # Keep real installers independent of runtime fixtures and their fixed versions.
+    $env:APPDATA = Join-Path $root 'EXE user name with spaces 测试'
+    [IO.Directory]::CreateDirectory($env:APPDATA) | Out-Null
     $nativeArchitecture = [Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITEW6432')
     if (!$nativeArchitecture) { $nativeArchitecture = $env:PROCESSOR_ARCHITECTURE }
     Assert (($Architecture -eq 'aarch64') -eq ($nativeArchitecture -eq 'ARM64')) 'installer tests must run on the requested native OS architecture'

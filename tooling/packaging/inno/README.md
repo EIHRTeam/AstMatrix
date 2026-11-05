@@ -111,8 +111,11 @@ Windows PowerShell 5.1 on x64. The ARM64 job downloads those same EXEs and runs
 the wrong-architecture package refuses installation before deploying plugin files.
 Mocks are confined to the test scripts and are never embedded in EXEs. Cleanup and
 uninstaller-process helpers shared by both test scripts live in `test-helpers.ps1`.
-Runtime tests cover UPIA decisions, conflicts and preservation. EXE smoke tests redirect
-AppData and management directories to a temporary tree, install twice, and uninstall.
+Runtime tests cover UPIA decisions, conflicts, preservation, and retry after failed fresh
+installs, upgrades, and reinstalls. Rollback restores the old payload and removes only newly
+created empty plugin directories, retaining foreign files (including hidden files).
+EXE smoke tests use a separate AppData tree from runtime fixtures and temporary management
+directories, install twice, and uninstall.
 `upgrade.tests.ps1` additionally compiles isolated legacy and current installers with unique
 test AppIds, then checks real version upgrades, shortcut migration, downgrade rejection,
 cancelled dialogs, failed removal, and explicit CEP disable using Windows UI Automation.
