@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { generateScene, providerOptions } from '@astmatrix/barcode-core';
+import { bwipProvider, generateScene, providerOptions } from '@astmatrix/barcode-core';
 import { AstMatrixApplicationService } from '@astmatrix/application';
 import { getProfile, normalizeRequest } from '@astmatrix/profiles';
 import {
@@ -36,7 +36,7 @@ for (const text of [
 ])
   it(`preserves ASCII input ${JSON.stringify(text)} and recovers the full request`, async () => {
     const input = request({ text });
-    const generated = await new AstMatrixApplicationService().generate(input);
+    const generated = await new AstMatrixApplicationService(bwipProvider).generate(input);
     expect(generated.scene.metadata.sourceValue).toBe(text);
     expect(generateScene(generated.scene.metadata.request!)).toEqual(generated.scene);
     expect(generated.scene.metadata.options.parsefnc).toBe(false);

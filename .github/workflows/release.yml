@@ -1,6 +1,6 @@
 name: Release
 
-# Same-commit payloads -> Windows installers -> verified assets -> tag and release.
+# Same-commit payloads -> signed ZXP and Windows installers -> verified assets -> release.
 on:
   workflow_dispatch:
 
@@ -71,7 +71,7 @@ jobs:
   installers:
     name: Compile Windows installers
     needs: prepare
-    runs-on: windows-2025
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -82,6 +82,89 @@ jobs:
         with:
           payload-artifact: release-payload-${{ needs.prepare.outputs.version }}
           installer-artifact: release-installers-${{ needs.prepare.outputs.version }}
+
+  sign-illustrator:
+    name: Sign Illustrator ZXP
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 15
+    # Secrets: base64 of local ./AstMatrix.p12 and its password.
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-payload-${{ needs.prepare.outputs.version }}
+          path: tmp/release-payload
+      - name: Download pinned Adobe ZXPSignCmd
+        shell: pwsh
+        run: |
+          $url = 'https://raw.githubusercontent.com/Adobe-CEP/CEP-Resources/ab5e4e3e53a42fad08e1225a22a991bb1ffe73f6/ZXPSignCMD/4.1.3/x64/ZXPSignCmd.exe'
+          curl.exe -fsSL --retry 3 $url -o tmp/ZXPSignCmd.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to download ZXPSignCmd.exe' }
+          $actual = (Get-FileHash tmp/ZXPSignCmd.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne 'ffc2223167225ce61d024eb463fc5ad1a1be16133f99ef334a646f7311916c98') {
+            throw 'ZXPSignCmd.exe SHA-256 mismatch'
+          }
+      - name: Sign and verify Illustrator ZXP
+        shell: pwsh
+        env:
+          ASTMATRIX_P12_BASE64: ${{ secrets.ASTMATRIX_P12_BASE64 }}
+          ASTMATRIX_P12_PASSWORD: ${{ secrets.ASTMATRIX_P12_PASSWORD }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          if (-not $env:ASTMATRIX_P12_BASE64 -or -not $env:ASTMATRIX_P12_PASSWORD) {
+            throw 'Configure ASTMATRIX_P12_BASE64 and ASTMATRIX_P12_PASSWORD secrets'
+          }
+          $certificate = Join-Path $env:GITHUB_WORKSPACE 'AstMatrix.p12'
+          $package = "tmp/release-signed/AstMatrix-Illustrator-$env:VERSION.zxp"
+          try {
+            [IO.File]::WriteAllBytes($certificate, [Convert]::FromBase64String($env:ASTMATRIX_P12_BASE64))
+            New-Item -ItemType Directory -Force tmp/zxp-source, tmp/release-signed | Out-Null
+            Expand-Archive -LiteralPath "tmp/release-payload/AstMatrix-Illustrator-$env:VERSION.zip" -DestinationPath tmp/zxp-source
+            if (-not (Test-Path tmp/zxp-source/CSXS/manifest.xml -PathType Leaf)) {
+              throw 'Illustrator manifest missing from payload'
+            }
+            & ./tmp/ZXPSignCmd.exe -sign tmp/zxp-source $package $certificate $env:ASTMATRIX_P12_PASSWORD -tsa http://timestamp.digicert.com
+            if ($LASTEXITCODE -ne 0) { throw 'ZXPSignCmd.exe failed to sign' }
+            $verification = & ./tmp/ZXPSignCmd.exe -verify $package -certInfo 2>&1
+            $verifyExitCode = $LASTEXITCODE
+            $verification | Write-Output
+            if ($verifyExitCode -ne 0) { throw 'ZXPSignCmd.exe failed to verify' }
+            if (($verification -join "`n") -notmatch '(?m)^\s*Timestamp:\s*Valid\b') {
+              throw 'Signed ZXP has no valid trusted timestamp'
+            }
+            if (-not (Test-Path $package -PathType Leaf)) { throw 'Signed ZXP missing' }
+            $signingCertificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+              $certificate, $env:ASTMATRIX_P12_PASSWORD
+            )
+            try {
+              if (-not $signingCertificate.HasPrivateKey) { throw 'Signing certificate has no private key' }
+              $hash = $signingCertificate.GetCertHashString([System.Security.Cryptography.HashAlgorithmName]::SHA256)
+              if ($hash -notmatch '^[0-9A-F]{64}$') { throw 'Invalid certificate SHA-256 fingerprint' }
+              $fingerprint = [regex]::Replace($hash, '..(?!$)', '$&:')
+              $fingerprintFile = "tmp/release-signed/AstMatrix-Illustrator-$env:VERSION-Certificate-SHA256.txt"
+              Set-Content -LiteralPath $fingerprintFile -Encoding ascii -Value "SHA-256 (X.509 certificate): $fingerprint"
+            } finally {
+              $signingCertificate.Dispose()
+            }
+          } finally {
+            Remove-Item -LiteralPath $certificate -Force -ErrorAction SilentlyContinue
+          }
+      - name: Record signed package provenance
+        run: node tooling/packaging/record-signed.mjs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-signed-${{ needs.prepare.outputs.version }}
+          path: tmp/release-signed/*
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
 
   installers-arm64:
     name: Verify Windows ARM64 installers
@@ -99,11 +182,13 @@ jobs:
 
   publish:
     name: Verify and publish release
-    needs: [prepare, installers, installers-arm64]
+    needs: [prepare, sign-illustrator, installers, installers-arm64]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -120,8 +205,16 @@ jobs:
         with:
           name: release-installers-${{ needs.prepare.outputs.version }}
           path: tmp/release-installers
-      - name: Verify all seven assets and their provenance
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-signed-${{ needs.prepare.outputs.version }}
+          path: tmp/release-signed
+      - name: Verify all eight assets and their provenance
         run: node tooling/packaging/verify-release.mjs
+      - name: Attest every release asset
+        uses: actions/attest@v4
+        with:
+          subject-path: 'release/*'
       - name: Upload complete release artifact
         uses: actions/upload-artifact@v7
         with:

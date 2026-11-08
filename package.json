@@ -9,6 +9,7 @@
     "dev": "pnpm --filter @astmatrix/playground-web dev",
     "build": "node tooling/build-targets/build.mjs",
     "build:illustrator": "node tooling/build-targets/build.mjs illustrator",
+    "build:illustrator:zxp": "zsh tooling/packaging/build-illustrator-zxp.zsh",
     "build:photoshop": "node tooling/build-targets/build.mjs photoshop",
     "build:inno": "node tooling/packaging/inno/build.mjs",
     "build:affinity": "node tooling/build-targets/build.mjs affinity",

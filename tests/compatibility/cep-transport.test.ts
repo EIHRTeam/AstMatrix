@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { describe, expect, it } from 'vitest';
@@ -29,7 +30,7 @@ function environment() {
   };
   return { context, cs, scripts, app };
 }
-const service = new AstMatrixApplicationService();
+const service = new AstMatrixApplicationService(bwipProvider);
 describe('CEP transport and ES3 dispatcher (local contracts only)', () => {
   it('reads status in one validated host call without allocating a transfer session', async () => {
     const { cs, scripts } = environment();

@@ -1,4 +1,3 @@
-import { bwipProvider } from '@astmatrix/barcode-core';
 import type { EncodeProvider } from '@astmatrix/barcode-core';
 import { normalizeRequest } from '@astmatrix/profiles';
 import type { GenerateRequest, NormalizedRequest } from '@astmatrix/profiles';
@@ -24,7 +23,7 @@ export class AstMatrixApplicationService {
   private readonly cache = new Map<string, GeneratedBarcode>();
   private readonly pending = new Map<string, Promise<GeneratedBarcode>>();
   private readonly capacity: number;
-  constructor(provider: EncodeProvider = bwipProvider, capacity = 32) {
+  constructor(provider: EncodeProvider, capacity = 32) {
     if (!Number.isInteger(capacity) || capacity < 1) throw new Error('Invalid cache capacity');
     this.provider = provider;
     this.capacity = capacity;

@@ -11,6 +11,8 @@ import {
   releaseVersion,
   verifyInventory,
   archiveName,
+  illustratorCertificateFingerprintName,
+  illustratorZxpName,
   installerName,
   installerArchitectures,
 } from '../artifacts.mjs';
@@ -346,21 +348,28 @@ it('shares release manifest version validation with manual builds', async () => 
   await expect(releaseVersion(directory)).rejects.toThrow('version mismatch');
 });
 
-it('assembles exactly seven release assets and rejects missing architectures or mismatched payloads', async () => {
+it('publishes ZXP and its certificate fingerprint and rejects mismatches', async () => {
   const directory = await temporary();
   const packages = path.join(directory, 'packages');
   const installers = path.join(directory, 'installers');
+  const signed = path.join(directory, 'signed');
   const output = path.join(directory, 'output');
   await mkdir(packages);
   await mkdir(installers);
+  await mkdir(signed);
   const version = '0.1.2';
   const archives = ['Illustrator', 'Photoshop', 'Figma'].map((host) => archiveName(host, version));
+  const zxp = illustratorZxpName(version);
+  const fingerprint = illustratorCertificateFingerprintName(version);
   const exes = ['Illustrator', 'Photoshop'].flatMap((host) =>
     installerArchitectures.map((architecture) => installerName(host, version, architecture)),
   );
   const bytes = Buffer.from('fixture only');
+  const fingerprintBytes = Buffer.from(`SHA-256 (X.509 certificate): ${'AA:'.repeat(31)}AA\n`);
   for (const name of archives) await writeFile(path.join(packages, name), bytes);
   for (const name of exes) await writeFile(path.join(installers, name), bytes);
+  await writeFile(path.join(signed, zxp), bytes);
+  await writeFile(path.join(signed, fingerprint), fingerprintBytes);
   const payloadInfo = {
     version,
     commit: 'abc',
@@ -372,27 +381,67 @@ it('assembles exactly seven release assets and rejects missing architectures or 
     artifacts: exes.map((name) => ({ name, sha256: digest(bytes) })),
     payloadArtifacts: payloadInfo.artifacts,
   };
+  const signedInfo = {
+    version,
+    commit: 'abc',
+    sourceArtifact: payloadInfo.artifacts.find(
+      (entry) => entry.name === archiveName('Illustrator', version),
+    ),
+    artifacts: [
+      { name: zxp, sha256: digest(bytes) },
+      { name: fingerprint, sha256: digest(fingerprintBytes) },
+    ],
+  };
   await writeFile(path.join(packages, 'payload-info.json'), JSON.stringify(payloadInfo));
   await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
-  await assembleRelease(packages, installers, output, version, 'abc');
-  expect((await readdir(output)).sort()).toEqual([...archives, ...exes].sort());
+  await writeFile(path.join(signed, 'signed-info.json'), JSON.stringify(signedInfo));
+  await assembleRelease(packages, installers, signed, output, version, 'abc');
+  expect((await readdir(output)).sort()).toEqual(
+    [
+      ...archives.filter((name) => name !== archiveName('Illustrator', version)),
+      ...exes,
+      zxp,
+      fingerprint,
+    ].sort(),
+  );
   const completeArtifacts = installerInfo.artifacts;
   installerInfo.artifacts = completeArtifacts.filter((entry) => !entry.name.includes('-aarch64-'));
   await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
-  await expect(assembleRelease(packages, installers, output, version, 'abc')).rejects.toThrow(
-    'Installer architecture set mismatch',
-  );
+  await expect(
+    assembleRelease(packages, installers, signed, output, version, 'abc'),
+  ).rejects.toThrow('Installer architecture set mismatch');
   installerInfo.artifacts = completeArtifacts;
   const armName = installerName('Photoshop', version, 'aarch64');
   await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
   await writeFile(path.join(installers, armName), 'tampered ARM installer');
-  await expect(assembleRelease(packages, installers, output, version, 'abc')).rejects.toThrow(
-    `Artifact hash mismatch: ${armName}`,
-  );
+  await expect(
+    assembleRelease(packages, installers, signed, output, version, 'abc'),
+  ).rejects.toThrow(`Artifact hash mismatch: ${armName}`);
   await writeFile(path.join(installers, armName), bytes);
   installerInfo.payloadArtifacts = [];
   await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
-  await expect(assembleRelease(packages, installers, output, version, 'abc')).rejects.toThrow(
-    'different payloads',
-  );
+  await expect(
+    assembleRelease(packages, installers, signed, output, version, 'abc'),
+  ).rejects.toThrow('different payloads');
+  installerInfo.payloadArtifacts = payloadInfo.artifacts;
+  await writeFile(path.join(installers, 'installer-info.json'), JSON.stringify(installerInfo));
+  signedInfo.sourceArtifact = { name: archiveName('Illustrator', version), sha256: 'wrong' };
+  await writeFile(path.join(signed, 'signed-info.json'), JSON.stringify(signedInfo));
+  await expect(
+    assembleRelease(packages, installers, signed, output, version, 'abc'),
+  ).rejects.toThrow('different Illustrator payload');
+  signedInfo.sourceArtifact = payloadInfo.artifacts[0];
+  await writeFile(path.join(signed, 'signed-info.json'), JSON.stringify(signedInfo));
+  await writeFile(path.join(signed, zxp), 'tampered ZXP');
+  await expect(
+    assembleRelease(packages, installers, signed, output, version, 'abc'),
+  ).rejects.toThrow(`Artifact hash mismatch: ${zxp}`);
+  await writeFile(path.join(signed, zxp), bytes);
+  const invalidFingerprint = Buffer.from('SHA-256 (X.509 certificate): invalid\n');
+  await writeFile(path.join(signed, fingerprint), invalidFingerprint);
+  signedInfo.artifacts[1] = { name: fingerprint, sha256: digest(invalidFingerprint) };
+  await writeFile(path.join(signed, 'signed-info.json'), JSON.stringify(signedInfo));
+  await expect(
+    assembleRelease(packages, installers, signed, output, version, 'abc'),
+  ).rejects.toThrow('Invalid Illustrator certificate fingerprint');
 });

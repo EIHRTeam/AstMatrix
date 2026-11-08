@@ -5,7 +5,8 @@
   "description": "Encoding providers (bwip-js/BWIPP) producing raw geometry",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./lazy": "./src/lazy.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

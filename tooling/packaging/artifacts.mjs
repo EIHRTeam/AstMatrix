@@ -9,6 +9,9 @@ export const repository = fileURLToPath(new URL('../..', import.meta.url));
 export const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 export const archiveName = (host, version) =>
   `AstMatrix-${host}-${version}.${host === 'Photoshop' ? 'ccx' : 'zip'}`;
+export const illustratorZxpName = (version) => `AstMatrix-Illustrator-${version}.zxp`;
+export const illustratorCertificateFingerprintName = (version) =>
+  `AstMatrix-Illustrator-${version}-Certificate-SHA256.txt`;
 export const installerArchitectures = Object.freeze(['x64', 'aarch64']);
 export function installerName(host, version, architecture = 'x64') {
   assert(
@@ -23,6 +26,11 @@ export async function releaseVersion(root = repository) {
   const { version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
   const cep = await readFile(path.join(root, 'apps/illustrator-cep/CSXS/manifest.xml'), 'utf8');
+  assert.equal(
+    cep.match(/ExtensionBundleId="([^"]+)"/)?.[1],
+    'com.adobeexchange.AstMatrix.1792169245.e017c631301fdefb23c93aef4e971dd1',
+    'Illustrator Adobe Exchange bundle ID mismatch',
+  );
   const versions = [
     cep.match(/ExtensionBundleVersion="([^"]+)"/)?.[1],
     ...[...cep.matchAll(/<Extension\b[^>]*\bVersion="([^"]+)"/g)].map((match) => match[1]),

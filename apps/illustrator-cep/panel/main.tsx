@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AstMatrixApplicationService } from '@astmatrix/application';
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { IllustratorCepAdapter } from '@astmatrix/host-adapter-illustrator-cep';
 import type { CSInterfaceLike } from '@astmatrix/host-adapter-illustrator-cep';
 declare const CSInterface: new () => CSInterfaceLike;
@@ -9,7 +10,7 @@ import '@astmatrix/ui-react/styles.css';
 import { afterPanelPaint, startHostRefresh } from './host-refresh';
 import { createCepLinkOpener } from './external-links';
 import { showPanelStartupError } from './startup-error';
-const service = new AstMatrixApplicationService();
+const service = new AstMatrixApplicationService(bwipProvider);
 const cs = new CSInterface();
 const adapter = new IllustratorCepAdapter(cs);
 const hostLocale = cs.getHostEnvironment().appUILocale;

@@ -1,4 +1,5 @@
 import { AstMatrixApplicationService } from '@astmatrix/application';
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { PhotoshopAdapter } from '@astmatrix/host-adapter-photoshop-uxp';
 import type { PhotoshopRuntime } from '@astmatrix/host-adapter-photoshop-uxp';
 import { HostError } from '@astmatrix/host-contract';
@@ -37,7 +38,7 @@ interface UxpRuntime {
 declare const require: (id: string) => unknown;
 const ps = require('photoshop') as PhotoshopRuntime,
   uxp = require('uxp') as UxpRuntime;
-const service = new AstMatrixApplicationService();
+const service = new AstMatrixApplicationService(bwipProvider);
 const adapter = new PhotoshopAdapter(ps, uxp.host.version);
 const root = document.getElementById('astmatrix-panel');
 if (!root) throw new Error('Missing native panel root');

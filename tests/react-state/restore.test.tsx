@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -5,7 +6,7 @@ import { AstMatrixApplicationService } from '@astmatrix/application';
 import { FakeHostAdapter } from '@astmatrix/host-contract';
 import type { HostAdapter } from '@astmatrix/host-contract';
 import { AstMatrixPanel, AstMatrixProviders } from '@astmatrix/ui-react';
-const service = new AstMatrixApplicationService();
+const service = new AstMatrixApplicationService(bwipProvider);
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);

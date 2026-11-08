@@ -9,7 +9,8 @@
     "./web-profiles": "./web-profiles/index.ts",
     "./build-targets": "./build-targets/targets.ts",
     "./manifest": "./manifest/index.ts",
-    "./web-assets": "./web-profiles/assets.ts"
+    "./web-assets": "./web-profiles/assets.ts",
+    "./web-chunks": "./web-profiles/chunks.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

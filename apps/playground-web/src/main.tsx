@@ -1,11 +1,12 @@
 import { StrictMode, useState, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AstMatrixApplicationService } from '@astmatrix/application';
+import { lazyBwipProvider } from '@astmatrix/barcode-core/lazy';
 import { FakeHostAdapter } from '@astmatrix/host-contract';
 import type { FakeFailure } from '@astmatrix/host-contract';
 import { AstMatrixPanel, AstMatrixProviders, useLocale } from '@astmatrix/ui-react';
 import '@astmatrix/ui-react/styles.css';
-const service = new AstMatrixApplicationService();
+const service = new AstMatrixApplicationService(lazyBwipProvider);
 const adapter = new FakeHostAdapter();
 function DemoControls() {
   const { t } = useLocale();

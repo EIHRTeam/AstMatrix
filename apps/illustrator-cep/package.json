@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@astmatrix/application": "workspace:*",
+    "@astmatrix/barcode-core": "workspace:*",
     "@astmatrix/host-adapter-illustrator-cep": "workspace:*",
     "@astmatrix/host-contract": "workspace:*",
     "@astmatrix/profiles": "workspace:*",

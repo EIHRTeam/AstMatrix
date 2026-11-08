@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -28,7 +29,7 @@ async function renderLinks(
   await act(async () =>
     root.render(
       <AstMatrixProviders
-        service={new AstMatrixApplicationService()}
+        service={new AstMatrixApplicationService(bwipProvider)}
         adapter={new FakeHostAdapter()}
         hostLocale={hostLocale}
         openExternal={openExternal}

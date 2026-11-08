@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AstMatrixApplicationService } from '@astmatrix/application';
+import { lazyBwipProvider } from '@astmatrix/barcode-core/lazy';
 import { AstMatrixPanel, AstMatrixProviders } from '@astmatrix/ui-react';
 import { createWebviewAdapter } from '../src/webview-client';
 import type { WebviewClientWindow } from '../src/webview-client';
@@ -24,7 +25,7 @@ try {
     clearInterval(timer);
     adapter.dispose();
   });
-  const service = new AstMatrixApplicationService();
+  const service = new AstMatrixApplicationService(lazyBwipProvider);
   function WebviewPanel() {
     const hostLocale = useSyncExternalStore(transport.subscribeLocale, transport.getLocale);
     return (

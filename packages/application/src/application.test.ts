@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { AstMatrixApplicationService, PreviewController, InsertController } from './index';
-import { ENGINE_VERSION, encodeNormalized } from '@astmatrix/barcode-core';
+import { ENGINE_VERSION, bwipProvider, encodeNormalized } from '@astmatrix/barcode-core';
 import {
   FakeHostAdapter,
   validateEnvelope,
@@ -131,7 +131,7 @@ it('debounce cancels scheduled jobs before they reach the encoder', async () => 
   preview.dispose();
 });
 async function ready() {
-  const service = new AstMatrixApplicationService(),
+  const service = new AstMatrixApplicationService(bwipProvider),
     preview = new PreviewController(service),
     adapter = new FakeHostAdapter();
   preview.request(basicSamples[0]!);
@@ -238,7 +238,7 @@ it('capability and protocol validation fail closed, including unsupported update
 });
 
 it('restores earlier pre-release metadata from the same locked engine while rejecting unknown versions', async () => {
-  const service = new AstMatrixApplicationService();
+  const service = new AstMatrixApplicationService(bwipProvider);
   const generated = await service.generate(basicSamples[0]!);
   const legacy = {
     ...generated.scene.metadata,

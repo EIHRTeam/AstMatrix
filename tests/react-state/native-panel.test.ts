@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { fireEvent, waitFor } from '@testing-library/dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AstMatrixApplicationService } from '@astmatrix/application';
@@ -13,7 +14,7 @@ it('native UXP UI reuses schemas, preserves tab selection, disables stale input 
   const root = document.createElement('div');
   document.body.appendChild(root);
   const adapter = new FakeHostAdapter(),
-    service = new AstMatrixApplicationService();
+    service = new AstMatrixApplicationService(bwipProvider);
   const previewSvg = vi.fn<() => Promise<string>>(async () => 'file:/local-preview.svg'),
     exportSvg = vi.fn<() => Promise<void>>(async () => {});
   panel = mountNativePanel({
@@ -53,7 +54,7 @@ it('native UXP UI reuses schemas, preserves tab selection, disables stale input 
 it('native form converts numeric MaxiCode selections and generates both admitted modes', async () => {
   const root = document.createElement('div');
   document.body.appendChild(root);
-  const service = new AstMatrixApplicationService();
+  const service = new AstMatrixApplicationService(bwipProvider);
   const generate = vi.spyOn(service, 'generateNormalized');
   panel = mountNativePanel({
     document,

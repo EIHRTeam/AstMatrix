@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { StrictMode, act } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -53,7 +54,7 @@ function mountFigmaPanel(sourceKind: 'null' | 'other' = 'other', showDiagnostics
   render(
     <StrictMode>
       <FigmaPanel
-        service={new AstMatrixApplicationService()}
+        service={new AstMatrixApplicationService(bwipProvider)}
         adapter={adapter}
         hostLocale="zh_CN"
         debounceMs={0}

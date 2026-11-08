@@ -64,6 +64,12 @@ it('keeps the Illustrator CEP runtime floor independent of annual aliases', () =
   const xml = new JSDOM(readFileSync('apps/illustrator-cep/CSXS/manifest.xml', 'utf8'), {
     contentType: 'application/xml',
   });
+  expect(xml.window.document.documentElement.getAttribute('ExtensionBundleId')).toBe(
+    'com.adobeexchange.AstMatrix.1792169245.e017c631301fdefb23c93aef4e971dd1',
+  );
+  const listed = xml.window.document.querySelector('ExtensionList > Extension')!;
+  const dispatched = xml.window.document.querySelector('DispatchInfoList > Extension')!;
+  expect(listed.getAttribute('Id')).toBe(dispatched.getAttribute('Id'));
   expect(xml.window.document.querySelector('RequiredRuntime')!.getAttribute('Version')).toBe(
     '11.0',
   );

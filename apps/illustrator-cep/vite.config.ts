@@ -56,6 +56,8 @@ export default defineConfig(({ command }) => ({
     // CEP opens file:// pages. Classic scripts avoid module/CORS fetches without CEF flags.
     modulePreload: false,
     cssCodeSplit: false,
+    // CEP file:// loading requires one classic script; its BWIPP module cannot be split.
+    chunkSizeWarningLimit: 1500,
     rolldownOptions: {
       output: {
         format: 'iife',

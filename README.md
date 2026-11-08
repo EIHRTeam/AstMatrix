@@ -193,9 +193,9 @@ A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Il
 
 **Manual**
 
-1. Download the latest Illustrator `.zip` package from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
+1. Download the latest Illustrator `.zxp` package from the [Releases page](https://github.com/EIHRTeam/AstMatrix/releases/latest).
 2. Make sure Adobe Illustrator is installed and completely closed.
-3. Open the downloaded `.zip` file using a ZIP archive utility (e.g., 7-Zip, ShichiZip, or Keka). Its contents start with `CSXS/manifest.xml`, without an enclosing `AstMatrix` folder.
+3. Open the downloaded `.zxp` file using a ZIP archive utility (e.g., 7-Zip, ShichiZip, or Keka). Its contents start with `CSXS/manifest.xml`, without an enclosing `AstMatrix` folder.
 4. Create an `AstMatrix` folder in the following directory, then extract all archive contents into it:
 
    - Windows: `%APPDATA%\Adobe\CEP\extensions\`

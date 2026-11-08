@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -24,7 +25,7 @@ function EnglishButton() {
   const { setPreference } = useLocale();
   return <button onClick={() => setPreference('en')}>English test</button>;
 }
-async function mount(service = new AstMatrixApplicationService()) {
+async function mount(service = new AstMatrixApplicationService(bwipProvider)) {
   await act(async () =>
     root.render(
       <AstMatrixProviders

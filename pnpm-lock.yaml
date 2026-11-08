@@ -233,6 +233,9 @@ importers:
       '@astmatrix/application':
         specifier: workspace:*
         version: link:../../packages/application
+      '@astmatrix/barcode-core':
+        specifier: workspace:*
+        version: link:../../packages/barcode-core
       '@astmatrix/host-adapter-figma-plugin':
         specifier: workspace:*
         version: link:../../packages/host-adapters/figma-plugin
@@ -267,6 +270,9 @@ importers:
       '@astmatrix/application':
         specifier: workspace:*
         version: link:../../packages/application
+      '@astmatrix/barcode-core':
+        specifier: workspace:*
+        version: link:../../packages/barcode-core
       '@astmatrix/host-adapter-illustrator-cep':
         specifier: workspace:*
         version: link:../../packages/host-adapters/illustrator-cep
@@ -325,6 +331,9 @@ importers:
       '@astmatrix/application':
         specifier: workspace:*
         version: link:../../packages/application
+      '@astmatrix/barcode-core':
+        specifier: workspace:*
+        version: link:../../packages/barcode-core
       '@astmatrix/host-adapter-photoshop-uxp':
         specifier: workspace:*
         version: link:../../packages/host-adapters/photoshop-uxp

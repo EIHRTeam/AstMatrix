@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { StrictMode, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
@@ -26,7 +27,7 @@ const button = (label: string) =>
   Array.from(document.querySelectorAll('button')).find((b) => b.textContent === label)!;
 async function mount() {
   const adapter = new FakeHostAdapter(),
-    service = new AstMatrixApplicationService();
+    service = new AstMatrixApplicationService(bwipProvider);
   await act(async () =>
     root.render(
       <StrictMode>

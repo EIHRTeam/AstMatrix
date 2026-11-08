@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -54,7 +55,7 @@ function LocaleControls() {
   );
 }
 it('persists a manual choice, follows updated host locale in Auto and preserves edited content', async () => {
-  const service = new AstMatrixApplicationService();
+  const service = new AstMatrixApplicationService(bwipProvider);
   const adapter = new FakeHostAdapter();
   const render = async (hostLocale: string) => {
     await act(async () =>
@@ -118,7 +119,7 @@ it('allows language changes when local storage is unavailable', async () => {
   await act(async () =>
     root.render(
       <AstMatrixProviders
-        service={new AstMatrixApplicationService()}
+        service={new AstMatrixApplicationService(bwipProvider)}
         adapter={new FakeHostAdapter()}
         hostLocale="zh_CN"
       >
@@ -134,7 +135,7 @@ it('navigates the fixed language menu by keyboard and closes it after selection'
   await act(async () =>
     root.render(
       <AstMatrixProviders
-        service={new AstMatrixApplicationService()}
+        service={new AstMatrixApplicationService(bwipProvider)}
         adapter={new FakeHostAdapter()}
         hostLocale="zh_CN"
       >

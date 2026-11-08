@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { expect, it } from 'vitest';
@@ -128,7 +129,7 @@ function mockIllustrator() {
 it.each(profiles.filter((p) => p.id !== 'qr-mobile'))(
   'Illustrator inserts $id production Scene natively at absolute artboard center and reads exact metadata',
   async (p) => {
-    const { scene } = await new AstMatrixApplicationService().generate({
+    const { scene } = await new AstMatrixApplicationService(bwipProvider).generate({
       symbologyId: p.symbologyId,
       profileId: p.id,
       fields: p.defaults,
@@ -160,7 +161,7 @@ it.each(profiles.filter((p) => p.id !== 'qr-mobile'))(
   },
 );
 it('Illustrator validates geometry before mutation and reports cleanup failures honestly', async () => {
-  const { scene } = await new AstMatrixApplicationService().generate({
+  const { scene } = await new AstMatrixApplicationService(bwipProvider).generate({
     symbologyId: 'ean13',
     profileId: 'ean13-default',
     fields: profiles[0]!.defaults,

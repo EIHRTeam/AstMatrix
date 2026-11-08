@@ -23,6 +23,8 @@ export default defineConfig({
     assetsInlineLimit: Infinity,
     cssCodeSplit: false,
     modulePreload: false,
+    // Figma requires this UI inside one inline HTML document.
+    chunkSizeWarningLimit: 1500,
     license: true,
     rolldownOptions: { output: { format: 'iife', codeSplitting: false } },
   },

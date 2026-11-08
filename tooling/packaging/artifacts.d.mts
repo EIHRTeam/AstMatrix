@@ -11,6 +11,8 @@ export interface Inventory {
 export const repository: string;
 export function digest(bytes: Uint8Array): string;
 export function archiveName(host: string, version: string): string;
+export function illustratorZxpName(version: string): string;
+export function illustratorCertificateFingerprintName(version: string): string;
 export const installerArchitectures: readonly ['x64', 'aarch64'];
 export function installerName(
   host: string,

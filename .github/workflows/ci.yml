@@ -73,7 +73,7 @@ jobs:
 
   # Build checks — Web Profile and host target compilation.
   #
-  # These steps produce local development bundles; signed release packages are not implemented.
+  # These steps produce local development bundles; release signing runs separately.
   build-checks:
     name: Build checks (macOS)
     needs: shared-checks
@@ -124,7 +124,7 @@ jobs:
       - name: Packaging plan
         run: pnpm package
 
-      # TODO: Affinity bundle and signed ZXP/CCX release packages.
+      # TODO: Affinity bundle and signed CCX release package.
       # Signing stays decoupled from shared code compilation.
 
   # Platform checks — required before release, not on every pull request.

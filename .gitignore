@@ -158,6 +158,8 @@ release/
 *.zxp
 *.ccx
 *.signed.zxp
+/AstMatrix.p12
+/ZXPSignCmd
 
 # Oxc / TypeScript caches
 .oxlintcache
@@ -183,3 +185,4 @@ sdk/
 *.swp
 .*.un~
 *.*~
+build-zxp.zsh

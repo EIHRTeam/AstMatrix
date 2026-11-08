@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { describe, expect, it } from 'vitest';
 import { AstMatrixApplicationService } from '@astmatrix/application';
 import { PhotoshopAdapter, geometryContours } from '@astmatrix/host-adapter-photoshop-uxp';
@@ -5,7 +6,7 @@ import type { InsertOptions } from '@astmatrix/host-contract';
 import { profiles } from '@astmatrix/profiles';
 import type { PathCommand } from '@astmatrix/vector-ir';
 import { mockPhotoshop } from './ps-runtime';
-const service = new AstMatrixApplicationService();
+const service = new AstMatrixApplicationService(bwipProvider);
 const options = (adapter: PhotoshopAdapter): InsertOptions => ({
   documentId: adapter.getSnapshot().documentId!,
   documentRevision: adapter.getSnapshot().revision,

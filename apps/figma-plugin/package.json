@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@astmatrix/application": "workspace:*",
+    "@astmatrix/barcode-core": "workspace:*",
     "@astmatrix/host-adapter-figma-plugin": "workspace:*",
     "@astmatrix/shared": "workspace:*",
     "@astmatrix/tooling": "workspace:*",

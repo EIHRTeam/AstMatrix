@@ -1,3 +1,4 @@
+import { bwipProvider } from '@astmatrix/barcode-core';
 import { expect, it } from 'vitest';
 import { Resvg } from '@resvg/resvg-js';
 import { AstMatrixApplicationService } from '@astmatrix/application';
@@ -36,7 +37,7 @@ function commands(points: Vertex[]): PathCommand[] {
 it.each(profiles.filter((p) => p.id !== 'qr-mobile'))(
   'preserves $id production outlines after native cubic/closure conversion (shared raster comparison)',
   async (p) => {
-    const { scene } = await new AstMatrixApplicationService().generate({
+    const { scene } = await new AstMatrixApplicationService(bwipProvider).generate({
       symbologyId: p.symbologyId,
       profileId: p.id,
       fields: p.defaults,

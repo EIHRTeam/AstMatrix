@@ -50,7 +50,7 @@ jobs:
   installers:
     name: Compile Windows installers
     needs: prepare
-    runs-on: windows-2025
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
