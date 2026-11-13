@@ -8,6 +8,11 @@
 [![Node.js 24](https://img.shields.io/badge/Node.js-24-339933.svg?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB.svg?style=flat-square&logo=react&logoColor=white)](https://react.dev)
 
+> [!IMPORTANT]
+> This project has been **deprecated** in favor of [**ToyShop**](https://github.com/EIHRTeam/ToyShop), a versatile suite of design tools.<br>
+> Existing versions will remain available, but no further updates or bug fixes are planned.<br>
+> All future development and maintenance will take place in the new repository.
+
 _"Let me be the guiding star for all"_
 
 A lightweight yet powerful muti-formats QR Code & Barcode generator for Adobe Illustrator, Adobe Photoshop and Figma.
